@@ -11,23 +11,18 @@
 
     <style>
         :root {
-            /* Theme Colors (Copied exactly from Dashboard) */
             --bg-dark: #000000;
-            --glass-surface: rgba(15, 15, 15, 0.85); 
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.05);
+            --glass-highlight: rgba(255, 255, 255, 0.15);
             --text-main: #ffffff;
             --text-muted: #a1a1aa;
-            
-            /* Gradient Accents */
-            --gradient-accent: linear-gradient(135deg, #0A84FF, #BF5AF2);
+            --accent-primary: #ffffff;
+            --accent-secondary: #aaaaaa;
+            --gradient-accent: linear-gradient(135deg, #ffffff, #a3a3a3);
             --gradient-fire: linear-gradient(135deg, #FF9500, #FF3B30);
             --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
-            
-            /* Modern Rounding */
-            --radius-card: 28px;
+            --radius-card: 32px;
             --radius-btn: 16px;
-            --blur: 40px;
-            
             --max-width-content: 700px;
         }
         
@@ -44,18 +39,14 @@
 
         #bg-container { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; overflow: hidden; 
-            background-color: #000000;
+            background-color: #050505;
             background-image: url('https://lh3.googleusercontent.com/d/1Q7do5GuhlylxCvqmlFOtilGxHSZsx2gp');
             background-size: cover;
             background-position: center;
         }
 
-        /* Added noise filter from dashboard over the background */
-        #bg-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; 
-            background: rgba(0, 0, 0, 0.15); 
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
-        }
+        /* Reduced overlay darkness so the liquid glass can refract the vibrant background colors */
+        #bg-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: rgba(0, 0, 0, 0.25); }
 
         .app-container { position: relative; max-width: 1280px; margin: 0 auto; padding: 20px 16px; min-height: 100vh; display: flex; flex-direction: column; transition: all 0.4s ease; }
         @media (min-width: 768px) { .app-container { padding: 40px 24px; } }
@@ -71,19 +62,20 @@
         .view { display: none; opacity: 0; transform: translateY(10px); transition: 0.3s ease; width: 100%; }
         .view.active { display: block; opacity: 1; transform: translateY(0); animation: fadeUp 0.4s ease forwards; }
         
-        .hero-banner { width: 100%; max-width: var(--max-width-content); margin: 0 auto 24px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); background: #111; line-height: 0; transition: all 0.3s ease; }
+        .hero-banner { width: 100%; max-width: var(--max-width-content); margin: 0 auto 24px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--glass-border); border-top: 1px solid var(--glass-highlight); box-shadow: 0 30px 60px rgba(0,0,0,0.8); background: #111; line-height: 0; transition: all 0.3s ease; }
         .hero-banner img { width: 100%; height: auto; display: block; }
         
-        /* Exact Frosted Class from Dashboard */
-        .frosted, .glass-card-inner { 
-            background: var(--glass-surface);
-            backdrop-filter: blur(var(--blur)) saturate(150%);
-            -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        /* Ultra-premium Liquid Black Glass Base */
+        .frosted { 
+            background: linear-gradient(145deg, rgba(40, 40, 40, 0.4), rgba(5, 5, 5, 0.65));
+            backdrop-filter: blur(40px) saturate(180%); 
+            -webkit-backdrop-filter: blur(40px) saturate(180%); 
+            border: 1px solid var(--glass-border); 
+            border-top: 1px solid var(--glass-highlight);
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 40px 80px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.05); 
             transition: all 0.3s ease; 
         }
-        
         .survey-card { width: 100%; max-width: var(--max-width-content); margin: 0 auto 40px; padding: 24px; border-radius: var(--radius-card); }
         @media (min-width: 768px) { .survey-card { padding: 40px; } }
 
@@ -98,7 +90,7 @@
             margin-bottom: 0;
         }
 
-        .section-header { font-size: 1.1rem; font-weight: 800; color: #BF5AF2; margin-bottom: 12px; margin-top: 10px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px; }
+        .section-header { font-size: 1.1rem; font-weight: 800; color: var(--accent-primary); margin-bottom: 12px; margin-top: 10px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px; }
         .section-header::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
 
         .form-group { margin-bottom: 20px; width: 100%; display: flex; flex-direction: column; height: 100%; }
@@ -110,13 +102,15 @@
 
         .form-group > .control-item, .form-group > .custom-checkbox { margin-top: auto; }
 
-        /* Exact Dashboard Input Styles */
+        /* Liquid Cutout Inputs */
         input.control-item, select.control-item, textarea.control-item { 
             width: 100%; 
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid rgba(255, 255, 255, 0.04); 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* Bottom rim catch light */
             color: #fff; padding: 14px 18px; border-radius: var(--radius-btn); font-family: inherit; font-size: 1rem; 
             outline: none; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: inset 0 4px 15px rgba(0, 0, 0, 0.6);
         }
         
         input[type="file"].control-item { padding: 12px 18px; cursor: pointer; }
@@ -128,31 +122,28 @@
         input[type="file"]::file-selector-button:hover { background: rgba(255, 255, 255, 0.25); }
 
         .control-item:focus { 
-            border-color: #0A84FF; 
-            background: rgba(255,255,255,0.08); 
-            box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15); 
+            border-color: var(--accent-primary); background: rgba(0, 0, 0, 0.6); 
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.15), inset 0 4px 15px rgba(0, 0, 0, 0.8); transform: translateY(-1px);
         }
 
         select.control-item { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 20px center; background-size: 16px; padding-right: 52px; }
         textarea.control-item { min-height: 100px; resize: vertical; }
         
-        .custom-checkbox { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.5; color: #fff; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 14px; border-radius: 12px; transition: 0.2s; width: 100%; }
-        .custom-checkbox:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
-        .custom-checkbox input { width: 22px; height: 22px; accent-color: #0A84FF; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+        .custom-checkbox { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.5; color: #fff; background: rgba(0, 0, 0, 0.3); padding: 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.04); border-bottom: 1px solid rgba(255, 255, 255, 0.1); transition: 0.2s; width: 100%; box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.4); }
+        .custom-checkbox:hover { background: rgba(0, 0, 0, 0.4); border-bottom-color: rgba(255, 255, 255, 0.2); }
+        .custom-checkbox input { width: 22px; height: 22px; accent-color: var(--accent-primary); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
 
-        .conditional-section { display: none; background: rgba(255, 255, 255, 0.03); border-left: 4px solid #0A84FF; padding: 18px; border-radius: 0 12px 12px 0; margin-bottom: 20px; animation: fadeUp 0.3s ease; }
+        .conditional-section { display: none; background: rgba(0, 0, 0, 0.2); border-left: 4px solid var(--accent-primary); padding: 18px; border-radius: 0 12px 12px 0; margin-bottom: 20px; animation: fadeUp 0.3s ease; box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.4); }
 
-        .btn { padding: 16px 30px; border-radius: var(--radius-btn); font-weight: 700; cursor: pointer; border: none; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; width: 100%; }
+        .btn { padding: 16px 30px; border-radius: var(--radius-btn); font-weight: 700; cursor: pointer; border: none; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; width: 100%; }
         @media (min-width: 768px) { .btn { width: auto; min-width: 250px; } }
 
-        /* Exact Dashboard Button Styles */
-        .btn-primary { background: var(--gradient-accent); color: white; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.2); }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4); }
-        .btn-primary:active { transform: translateY(0); }
-        
+        .btn-primary { background: var(--accent-primary); color: #000000; box-shadow: 0 10px 30px rgba(255, 255, 255, 0.25); }
+        .btn-primary:active { transform: scale(0.96); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.15); }
         .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; min-width: auto; }
 
         .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
+        .btn-primary .loader { border-color: #000; border-bottom-color: transparent; }
         
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -177,14 +168,13 @@
         }
 
         #marketSelectionContainer { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-        .market-option { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 12px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; transition: 0.2s; }
-        .market-option:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
-        .market-option.selected { border-color: #0A84FF; background: rgba(10, 132, 255, 0.15); box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.3); }
-        .market-option input { width: 18px; height: 18px; accent-color: #0A84FF; margin-top: 2px; flex-shrink: 0; }
+        .market-option { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.04); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 16px; border-radius: 12px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; transition: 0.2s; box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.4); }
+        .market-option.selected { border-color: var(--accent-primary); background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 20px rgba(255, 255, 255, 0.15), inset 0 2px 10px rgba(0, 0, 0, 0.2); border-bottom-color: var(--accent-primary); }
+        .market-option input { width: 18px; height: 18px; accent-color: var(--accent-primary); margin-top: 2px; flex-shrink: 0; }
         .market-name { font-weight: 800; color: #fff; font-size: 1.05rem; display: block; margin-bottom: 4px; }
         .market-meta { font-size: 0.85rem; color: var(--text-muted); display: block; line-height: 1.5; }
 
-        .summary-label { font-size: 0.7rem; color: #BF5AF2; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; text-align: center; }
+        .summary-label { font-size: 0.7rem; color: var(--accent-secondary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; text-align: center; }
         .summary-value { font-size: 1rem; color: #fff; display: block; margin-bottom: 20px; font-weight: 600; line-height: 1.4; text-align: center; }
 
         .modal { position: fixed; inset: 0; z-index: 1000; display: none; justify-content: center; align-items: center; padding: 16px; }
@@ -203,10 +193,10 @@
         .wizard-nav .btn { flex: 0 1 auto; width: auto; min-width: 140px; padding: 14px 24px; font-size: 1.05rem; }
         @media (max-width: 380px) { .wizard-nav .btn { min-width: 120px; padding: 14px 16px; font-size: 1rem; } }
         
-        #wizardProgress { text-align: center; margin-bottom: 24px; color: #BF5AF2; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; display: none; }
+        #wizardProgress { text-align: center; margin-bottom: 24px; color: var(--accent-primary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; display: none; }
         .progress-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
         .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: 0.3s; }
-        .progress-dot.active { background: #BF5AF2; transform: scale(1.2); }
+        .progress-dot.active { background: var(--accent-primary); transform: scale(1.2); }
 
         /* --- EXCLUSIVE WELCOME UI STYLES --- */
         .arena-tag {
@@ -217,40 +207,54 @@
         }
         
         .glass-card-inner {
-            border-radius: var(--radius-card); 
+            background: linear-gradient(145deg, rgba(40, 40, 40, 0.4), rgba(5, 5, 5, 0.65));
+            backdrop-filter: blur(40px) saturate(180%); 
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border); 
+            border-top: 1px solid var(--glass-highlight);
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 32px; 
             padding: 32px 24px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.05);
             text-align: center; margin: 0 auto; width: 100%; max-width: 420px;
         }
 
         .big-action-btn {
-            background: var(--gradient-accent); color: white;
+            background: var(--accent-primary); color: #000000;
             border: none; padding: 20px; width: 100%; border-radius: 100px;
             font-weight: 900; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em;
-            cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 15px rgba(10, 132, 255, 0.2);
+            cursor: pointer; transition: all 0.3s; box-shadow: 0 15px 30px -10px rgba(255, 255, 255, 0.3);
             touch-action: manipulation;
         }
-        .big-action-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4); }
-        .big-action-btn:active { transform: scale(0.97); }
-        .big-action-btn:disabled { opacity: 0.3; background: rgba(255,255,255,0.1); box-shadow: none; cursor: not-allowed; animation: none; color: #777; border: 1px solid rgba(255,255,255,0.05); }
+        .big-action-btn:not(:disabled) { animation: pulse-glow 2.5s infinite; }
+        .big-action-btn:active { transform: scale(0.97); opacity: 0.9; }
+        .big-action-btn:disabled { opacity: 0.25; background: #3a3a3c; box-shadow: none; cursor: not-allowed; animation: none; color: #777; }
+        
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 25px -8px rgba(255, 255, 255, 0.3); }
+            50% { transform: scale(1.02); box-shadow: 0 15px 35px -8px rgba(255, 255, 255, 0.5); }
+        }
 
         .neon-input {
             width: 100%; 
             font-family: inherit;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: var(--radius-btn); padding: 18px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px; padding: 18px;
             color: white; font-size: 1.5rem; font-weight: 800; letter-spacing: 2px;
             outline: none; transition: 0.3s; text-align: center;
+            box-shadow: inset 0 8px 25px rgba(0, 0, 0, 0.7);
         }
         .neon-input::placeholder {
-            color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.15);
             font-weight: 700; 
             letter-spacing: 1px;
         }
         .neon-input:focus { 
-            border-color: #0A84FF; 
-            background: rgba(255,255,255,0.08); 
-            box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15);
+            border-color: var(--accent-primary); 
+            background: rgba(0, 0, 0, 0.6); 
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.15), inset 0 8px 25px rgba(0, 0, 0, 0.9);
         }
     </style>
 </head>
@@ -338,7 +342,7 @@
             </div>
 
             <div id="summaryContainer" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; margin: 0 auto 32px; max-width: 500px; text-align: center;">
-                <div id="summaryHeader" style="font-size: 1.2rem; font-weight: 800; color: #BF5AF2; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;">
+                <div id="summaryHeader" style="font-size: 1.2rem; font-weight: 800; color: var(--accent-primary); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;">
                     Submission Summary
                 </div>
                 <div id="summaryContent"></div>
@@ -593,7 +597,7 @@
                 currentStepDiv = document.createElement('div');
                 currentStepDiv.className = 'form-step';
                 
-                currentStepDiv.innerHTML = `<div class="survey-header-center"><h3 style="margin-top:0; font-size: 1.6rem; color:#BF5AF2; letter-spacing: -0.02em;">${q.label}</h3></div>`;
+                currentStepDiv.innerHTML = `<div class="survey-header-center"><h3 style="margin-top:0; font-size: 1.6rem; color:var(--accent-primary); letter-spacing: -0.02em;">${q.label}</h3></div>`;
 
                 currentGrid = document.createElement('div');
                 currentGrid.className = 'dynamic-form-grid';
@@ -950,9 +954,9 @@
             document.getElementById('summaryContent').innerHTML = summaryHtml;
 
             switchView('success');
-            // Confetti
+            // Monochrome Confetti
             if (typeof confetti === 'function') {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#0A84FF', '#BF5AF2', '#ffffff'] });
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#ffffff', '#aaaaaa', '#555555'] });
             }
         } catch(e) { console.error(e); showToast("Submission failed", true); }
         finally { btn.disabled = false; }
