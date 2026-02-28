@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>CAB Student Market Application</title>
+    
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --glass-surface: rgba(0, 0, 0, 0.65); 
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --text-main: #ffffff;
+            --text-muted: #d1d1d6;
+            --gradient-accent: linear-gradient(135deg, #0A84FF, #BF5AF2);
+            --gradient-fire: linear-gradient(135deg, #FF9500, #FF3B30);
+            --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
+            --radius-card: 28px;
+            --radius-btn: 16px;
+            --blur-bg: 2px; 
+            --blur-card: 12px;
+            --max-width-content: 700px;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif; 
+            color: var(--text-main); 
+            background-color: var(--bg-dark); 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+        }
+
+        #bg-container { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; overflow: hidden; background-color: #000000;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(10, 132, 255, 0.25) 0%, transparent 50%), 
+                radial-gradient(circle at 90% 80%, rgba(191, 90, 242, 0.25) 0%, transparent 50%); 
+        }
+
+        #bg-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(var(--blur-bg)); -webkit-backdrop-filter: blur(var(--blur-bg)); }
+
+        .app-container { position: relative; max-width: 1280px; margin: 0 auto; padding: 20px 16px; min-height: 100vh; display: flex; flex-direction: column; }
+        @media (min-width: 768px) { .app-container { padding: 40px 24px; } }
+
+        .view { display: none; opacity: 0; transform: translateY(10px); transition: 0.3s ease; }
+        .view.active { display: block; opacity: 1; transform: translateY(0); animation: fadeUp 0.4s ease forwards; }
+        
+        .hero-banner { width: 100%; max-width: var(--max-width-content); margin: 0 auto 24px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: #111; line-height: 0; }
+        .hero-banner img { width: 100%; height: auto; display: block; }
+        
+        .frosted { background: var(--glass-surface); backdrop-filter: blur(var(--blur-card)); -webkit-backdrop-filter: blur(var(--blur-card)); border: 1px solid var(--glass-border); box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+        .survey-card { width: 100%; max-width: var(--max-width-content); margin: 0 auto 40px; padding: 24px; border-radius: var(--radius-card); }
+        @media (min-width: 768px) { .survey-card { padding: 40px; } }
+
+        .section-header { font-size: 1.2rem; font-weight: 800; color: #BF5AF2; margin-bottom: 20px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px; }
+        .section-header::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
+
+        .form-group { margin-bottom: 28px; width: 100%; }
+        .form-label { display: block; margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.4; }
+        .form-hint { display: block; margin-top: 6px; color: rgba(255,255,255,0.5); font-size: 0.8rem; line-height: 1.4; text-transform: none; font-weight: 400; letter-spacing: 0; }
+
+        .required-mark { color: #FF3B30; margin-left: 4px; font-weight: bold; }
+
+        input.control-item, select.control-item, textarea.control-item { 
+            width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); 
+            color: #fff; padding: 16px 20px; border-radius: var(--radius-btn); font-family: inherit; font-size: 1rem; 
+            outline: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        
+        input[type="file"].control-item { padding: 12px 20px; cursor: pointer; }
+
+        input[type="file"]::file-selector-button {
+            border: none; background: rgba(255,255,255,0.1); padding: 8px 16px;
+            border-radius: 8px; color: #fff; cursor: pointer; margin-right: 15px;
+            transition: 0.2s; font-weight: bold;
+        }
+        input[type="file"]::file-selector-button:hover { background: rgba(255,255,255,0.2); }
+
+        .control-item:focus { 
+            border-color: #0A84FF; background: rgba(255,255,255,0.12); 
+            box-shadow: 0 0 15px rgba(10, 132, 255, 0.4), 0 0 2px rgba(191, 90, 242, 0.4);
+            transform: scale(1.01);
+        }
+
+        select.control-item { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 24px center; background-size: 16px; padding-right: 52px; }
+        textarea.control-item { min-height: 120px; resize: vertical; }
+        
+        .custom-checkbox { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin-bottom: 16px; font-size: 0.95rem; line-height: 1.5; color: #fff; background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: 0.2s; }
+        .custom-checkbox:hover { background: rgba(255,255,255,0.06); }
+        .custom-checkbox input { width: 22px; height: 22px; accent-color: #0A84FF; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+
+        .conditional-section { display: none; background: rgba(10, 132, 255, 0.05); border-left: 4px solid #0A84FF; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 28px; animation: fadeUp 0.3s ease; }
+
+        .btn { padding: 18px 32px; border-radius: var(--radius-btn); font-weight: 700; cursor: pointer; border: none; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; width: 100%; }
+        @media (min-width: 768px) { .btn { width: auto; min-width: 250px; } }
+
+        .btn-primary { background: var(--gradient-accent); color: white; box-shadow: 0 10px 20px rgba(10, 132, 255, 0.2); }
+        .btn-primary:active { transform: scale(0.96); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; min-width: auto; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+
+        .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
+        
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; background: var(--gradient-success); font-weight: 700; z-index: 2000; display: none; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        
+        footer { margin-top:auto; padding:60px 0 40px; text-align:center; color: rgba(255, 255, 255, 0.4); font-size: 0.75rem; letter-spacing: 0.05em; line-height: 1.6; }
+        
+        .center-btn-wrapper { display: flex; justify-content: center; width: 100%; margin-top: 20px; }
+        .success-icon { width: 80px; height: 80px; background: var(--gradient-success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 40px; color: white; box-shadow: 0 10px 20px rgba(52, 199, 89, 0.3); }
+        .survey-header-center { text-align: center; margin-bottom: 40px; }
+        
+        .autofill-indicator { font-size: 0.8rem; color: #34C759; margin-top: 8px; display: none; font-weight: bold; background: rgba(52, 199, 89, 0.1); padding: 8px 12px; border-radius: 8px; display: inline-block; }
+
+        /* Dynamic Grid Layout */
+        .dynamic-form-grid { display: grid; grid-template-columns: 1fr; gap: 28px 20px; }
+        .dynamic-form-grid .form-group { margin-bottom: 0; display: flex; flex-direction: column; height: 100%; align-items: flex-start; }
+        .dynamic-form-grid .form-label { width: 100%; }
+        /* Pushes the input boxes to the bottom so they always align symmetrically */
+        .dynamic-form-grid .control-item { margin-top: auto; width: 100%; }
+        .dynamic-form-grid .custom-checkbox { margin-top: auto; width: 100%; margin-bottom: 0; }
+        
+        @media (min-width: 600px) {
+            .dynamic-form-grid { grid-template-columns: 1fr 1fr; }
+            .full-width { grid-column: 1 / -1; }
+            .half-width { grid-column: span 1; }
+        }
+
+        /* Admin Gate Modal */
+        .modal { position: fixed; inset: 0; z-index: 1000; display: none; justify-content: center; align-items: center; padding: 16px; }
+        .modal.show { display: flex; }
+        .modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { position: relative; width: 100%; max-width: 400px; background: #111; border-radius: 28px; padding: 32px; border: 1px solid var(--glass-border); text-align: center; }
+
+        /* Admin Builder Question Block */
+        .builder-q-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 16px; margin-bottom: 15px; position: relative;}
+        .builder-q-remove { position: absolute; top: 15px; right: 15px; color: #FF3B30; cursor: pointer; font-weight: bold; background: none; border: none; font-size: 1.2rem; }
+        .builder-move-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;}
+        .builder-move-btn:hover { background: rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+
+<div id="bg-container"></div>
+<div id="bg-overlay"></div>
+
+<div class="app-container">
+    <div class="hero-banner">
+        <img id="appHeaderImg" src="https://i.imgur.com/HJTTEzA.png" alt="Student Market">
+    </div>
+
+    <!-- APPLICATION FORM VIEW -->
+    <div id="applicationView" class="view active">
+        <div class="frosted survey-card">
+            
+            <div class="survey-header-center">
+                <h3 id="appTitle" style="margin-top:0; font-size: 2rem; letter-spacing: -0.02em;">Student Market Vendor Application</h3>
+                <div id="appDesc" style="color: var(--text-muted); margin: 15px auto; line-height: 1.6; max-width: 95%;">
+                    Loading application form...
+                </div>
+                <span style="font-size: 0.75rem; color: #FF3B30; font-weight: 700; text-transform: uppercase;">* Indicates required question</span>
+            </div>
+
+            <!-- Static Event Selection (Required for Database Link) -->
+            <div class="form-group full-width">
+                <label class="form-label">Which Market are you applying for?<span class="required-mark">*</span></label>
+                <select id="formEventId" class="control-item">
+                    <option value="">Loading available markets...</option>
+                </select>
+            </div>
+
+            <!-- DYNAMIC FORM INJECTED HERE -->
+            <div id="dynamicFormContainer" class="dynamic-form-grid"></div>
+
+            <div class="center-btn-wrapper" style="margin-top: 50px;">
+                <button class="btn btn-primary" id="submitBtn" onclick="submitApplication()">
+                    <span id="submitBtnText">Submit Application</span>
+                    <div class="loader" id="submitLoader"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS VIEW -->
+    <div id="successView" class="view">
+        <div class="frosted survey-card" style="text-align: center;">
+            <div class="success-icon">✓</div>
+            <h2 style="margin-top:0">Application Received!</h2>
+            <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 32px;">
+                Thank you for applying! Your application is now under review. Keep an eye on your preferred email for updates regarding your status.
+            </p>
+            <div class="center-btn-wrapper">
+                <button class="btn btn-primary" onclick="window.location.reload()">Return to Start</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN BUILDER VIEW -->
+    <div id="adminView" class="view">
+        <div class="frosted survey-card" style="max-width: 900px;">
+            <h2 style="margin-top:0; font-size: 2rem;">Form Builder Admin</h2>
+            <p style="color:var(--text-muted); margin-bottom: 30px;">Add, edit, reorder, or delete any question on the application.</p>
+
+            <div class="section-header">Global Branding</div>
+            <div class="form-group">
+                <label class="form-label">Header Image URL</label>
+                <input type="text" id="adminHeaderUrl" class="control-item" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Form Title</label>
+                <input type="text" id="adminTitle" class="control-item" placeholder="Student Market Vendor Application">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Form Description (Accepts HTML)</label>
+                <textarea id="adminDesc" class="control-item" style="min-height: 100px;"></textarea>
+            </div>
+
+            <div class="section-header" style="margin-top:40px; margin-bottom: 10px;">Form Questions</div>
+            <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Use Half-Width for short answers like names to save vertical space. Core system tags (like "student_id") save to specific database columns; custom tags automatically save into the additional comments.</p>
+            
+            <div id="adminQuestionsList"></div>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="btn btn-ghost" style="padding: 12px 24px; font-size: 0.9rem;" onclick="addCustomQuestion('text')">+ Add Question</button>
+                <button class="btn btn-ghost" style="padding: 12px 24px; font-size: 0.9rem;" onclick="addCustomQuestion('section_header')">+ Add Section Header</button>
+            </div>
+
+            <div class="center-btn-wrapper" style="margin-top: 50px; display:flex; gap: 15px;">
+                <button class="btn btn-ghost" onclick="switchView('application')">Exit Without Saving</button>
+                <button class="btn btn-primary" id="adminSaveBtn" onclick="saveAdminConfig()">
+                    <span>Save Form Settings</span>
+                    <div class="loader" id="adminSaveLoader"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2026 Canyon Activities Board <br>
+        <button class="btn btn-ghost" style="font-size:0.7rem; opacity:0.4; padding: 6px 12px; margin-top:10px; border:none; min-width:auto;" onclick="showAdminGate()">Admin Access</button>
+    </footer>
+</div>
+
+<!-- Admin Password Gate Modal -->
+<div id="gateModal" class="modal">
+    <div class="modal-bg" onclick="hideAdminGate()"></div>
+    <div class="modal-content">
+        <h3 style="margin-top:0">Authorization Required</h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Enter board password to configure form.</p>
+        <input type="password" id="adminPass" class="control-item" placeholder="Password" style="margin-bottom:20px; text-align: center;" autocomplete="off" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
+        <button class="btn btn-primary" onclick="verifyAdmin()" style="width: 100%;">Authorize</button>
+    </div>
+</div>
+
+<div id="toast">Update Successful</div>
+
+<script>
+    // SUPABASE CONFIGURATION
+    const SUPABASE_URL = 'https://xdfbjusrwbxoxbcocxkp.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_ylaFmuuSPD2UcKdF1yKw4g_UPXiRRef';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // DEFAULT QUESTION TEMPLATE (Matches exactly the requested format)
+    const defaultQuestions = [
+        { id: 'section_personal', type: 'section_header', label: '1. Personal Information', width: 'full', isCore: true },
+        { id: 'student_id', type: 'number', label: 'Student ID Number', hint: 'Type your ID and tap away to auto-fill your info if you\'ve applied before!', required: true, width: 'full', isCore: true },
+        { id: 'first_name', type: 'text', label: 'First Name', hint: '', required: true, width: 'half', isCore: true },
+        { id: 'last_name', type: 'text', label: 'Last Name', hint: '', required: true, width: 'half', isCore: true },
+        { id: 'preferred_email', type: 'email', label: 'Preferred Email', hint: 'Vendor confirmation emails will be sent to your preferred email! Please double check that your email is correct and not misspelled in any way! If it is, you won\'t recieve a confirmation email!', required: true, width: 'full', isCore: true },
+        { id: 'gcu_email', type: 'email', label: 'GCU Email', hint: '', required: true, width: 'full', isCore: true },
+        { id: 'phone', type: 'tel', label: 'Phone Number', hint: '', required: true, width: 'half', isCore: true },
+        { id: 'communication_method', type: 'dropdown', label: 'Preferred Communication Method', hint: '', options: 'Email, Text', required: true, width: 'half', isCore: true },
+        { id: 'year', type: 'dropdown', label: 'What year are you at GCU?', hint: '', options: 'Freshman, Sophomore, Junior, Senior', required: true, width: 'half', isCore: true },
+        { id: 'past_vendor', type: 'dropdown', label: 'Have you ever worked with CAB at a student market before?', hint: '', options: 'Yes, No', required: true, width: 'half', isCore: true },
+        { id: 'availability', type: 'dropdown', label: 'Will you be available from 6:30 pm to 9:00 pm on January 12th?', hint: '', options: 'Yes, No', required: true, width: 'full', isCore: true },
+        
+        { id: 'section_vendor', type: 'section_header', label: '2. Vendor Details', width: 'full', isCore: true },
+        { id: 'description', type: 'textarea', label: 'Vendor/Project Description', hint: '', required: true, width: 'full', isCore: true },
+        { id: 'link', type: 'text', label: 'Social Media Handle or Website (Showcasing Your Products)', hint: 'This is not your personal social media account, but rather one that displays the business you\'re running and the items you intend to sell. Note: if your business doesn\'t have a social media account or website, you may include the link to a Google Doc with pictures. Important: make sure the document is public and visible!', required: true, width: 'full', isCore: true },
+        { id: 'food_license', type: 'dropdown', label: 'If you are selling food, do you have your food handlers\' license?', hint: 'This is required to sell food or drinks at our market. If you do not have one, please do not submit this application until you do!', options: 'Yes, No, Not applicable', required: true, width: 'full', isCore: true },
+        
+        { id: 'section_logistics', type: 'section_header', label: '3. Logistics & Agreements', width: 'full', isCore: true },
+        { id: 'needs_power', type: 'dropdown', label: 'Do you need to be by an outlet or have access to a power source to run your table?', hint: '', options: 'Yes, No', required: true, width: 'full', isCore: true },
+        
+        { id: 'section_agreements', type: 'section_header', label: 'Check the boxes to acknowledge', width: 'full', isCore: false },
+        { id: 'agreements_checked', type: 'checkbox_single', label: 'Liability Acknowledgment', hint: 'I acknowledge that CAB and Grand Canyon University are not responsible and cannot be held liable for the product or quality of the product being sold. As the seller I am liable and bound by any verbal statements/agreement pertaining to the item being sold and am responsible for any causes or results from using its products, services, or any information provided.', required: true, width: 'full', isCore: true },
+        { id: 'agree_taxes', type: 'checkbox_single', label: 'Taxes Acknowledgment', hint: 'I acknowledge that as the seller I am fully responsible for claiming income received from this market on applicable taxes. CAB and Grand Canyon University serve as a host to the business owner by offering a free platform for the entrepreneur and thereby do not collect any fees or income from vendors.', required: true, width: 'full', isCore: false },
+        { id: 'agree_safety', type: 'checkbox_single', label: 'Safety Acknowledgment', hint: 'I acknowledge that if I as a vendor cannot maintain a safe, friendly and respectful environment, CAB will be obligated to shut down the vendors booth for safety measures.', required: true, width: 'full', isCore: false },
+        { id: 'agree_terms', type: 'checkbox_single', label: 'Terms Acknowledgment', hint: 'By applying for student market you acknowledge our terms and hereby consent to our disclaimer and agree to its terms.', required: true, width: 'full', isCore: false },
+        { id: 'agree_media', type: 'checkbox_single', label: 'Media Acknowledgment', hint: 'I acknowledge and accept that GCU Student Engagement and CAB Marketing may be utilizing photography and videography at this event that may include myself or my products.', required: true, width: 'full', isCore: false },
+        
+        { id: 'additional_comments', type: 'textarea', label: 'Additional Comments, Requests, or Anything You May Need From CAB to Run Your Table Smoothly', hint: 'For any additional questions or concerns, please email lopetownmarket@gmail.com. Thank you for your time!', required: false, width: 'full', isCore: true }
+    ];
+
+    let formConfig = {
+        headerUrl: "https://i.imgur.com/HJTTEzA.png",
+        title: "January 12th The Market Times Student Market Vendor Application",
+        description: "Hello! Thank you for your interest in applying to a CAB student Market for the 2025-2026 school year! CAB Applications for the January 12th The Market Times Student Market: Spring 2026.<br><br><strong>Date of Market:</strong> Monday, January 12th of 2026<br><strong>Time:</strong> 6:30-9:00pm<br><strong>Location:</strong> Prescott Field<br><br>This application will close on January 7th<br>Select vendors will be contacted via email on January 9th<br>Respond to confirm your spot by January 12th",
+        questions: [] 
+    };
+
+    // SYSTEM INIT
+    window.onload = async () => {
+        await loadEvents();
+        await loadConfig();
+    };
+
+    // Must be hoisted because it is called in HTML attributes in renderPublicForm
+    async function loadEvents() {
+        try {
+            const { data, error } = await _supabase.from('events').select('id, name').order('created_at', { ascending: false });
+            const select = document.getElementById('formEventId');
+            if (error || !data || data.length === 0) {
+                select.innerHTML = '<option value="">No markets currently open.</option>';
+                return;
+            }
+            select.innerHTML = '<option value="">Select a market...</option>';
+            data.forEach(e => { select.innerHTML += `<option value="${e.id}">${e.name}</option>`; });
+        } catch (err) { console.error("Failed to load events", err); }
+    }
+
+    // --- CONFIG & RENDER LOGIC ---
+
+    async function loadConfig() {
+        try {
+            // Using V3 forces it to pull our fresh default layout with stacked emails
+            const { data, error } = await _supabase.from('secrets').select('value').eq('name', 'MARKET_FORM_CONFIG_V3').maybeSingle();
+            if (data && data.value) {
+                let parsed = JSON.parse(data.value);
+                formConfig.headerUrl = parsed.headerUrl || formConfig.headerUrl;
+                formConfig.title = parsed.title || formConfig.title;
+                formConfig.description = parsed.description || formConfig.description;
+                formConfig.questions = parsed.questions || JSON.parse(JSON.stringify(defaultQuestions));
+            } else {
+                formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions));
+            }
+            renderPublicForm();
+        } catch (err) {
+            console.log("Error loading config, using defaults.", err);
+            formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions));
+            renderPublicForm();
+        }
+    }
+
+    function renderPublicForm() {
+        // App Headers
+        document.getElementById('appHeaderImg').src = formConfig.headerUrl;
+        document.getElementById('appTitle').innerHTML = formConfig.title;
+        document.getElementById('appDesc').innerHTML = formConfig.description;
+
+        // Form Fields
+        const container = document.getElementById('dynamicFormContainer');
+        container.innerHTML = '';
+
+        formConfig.questions.forEach((q, index) => {
+            if (q.type === 'section_header') {
+                container.innerHTML += `<div class="full-width"><div class="section-header" style="margin-top: 20px;">${q.label}</div></div>`;
+                return;
+            }
+
+            let inputHtml = '';
+            let onBlurEvt = q.id === 'student_id' ? `onblur="checkExistingVendor()"` : '';
+            let onChangeEvt = q.id === 'food_license' ? `onchange="toggleFoodLicense()"` : (q.id === 'needs_power' ? `onchange="togglePowerAgreement()"` : '');
+
+            if (q.type === 'textarea') {
+                inputHtml = `<textarea id="form_${q.id}" class="control-item" placeholder="Type here..."></textarea>`;
+            } else if (q.type === 'dropdown') {
+                const opts = (q.options || '').split(',').map(o => `<option value="${o.trim()}">${o.trim()}</option>`).join('');
+                inputHtml = `<select id="form_${q.id}" class="control-item" ${onChangeEvt}><option value="">Select...</option>${opts}</select>`;
+            } else if (q.type === 'checkbox_single') {
+                inputHtml = `
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="form_${q.id}">
+                        <span style="font-size: 0.9rem;">${q.hint || q.label}</span>
+                    </label>
+                `;
+            } else {
+                // handles text, email, number, tel
+                inputHtml = `<input type="${q.type}" id="form_${q.id}" class="control-item" placeholder="Type here..." ${onBlurEvt} autocomplete="off" />`;
+            }
+            
+            const reqHtml = q.required ? `<span class="required-mark">*</span>` : '';
+            // If it's a checkbox, the hint is already inside the clickable area, so don't show it as a sub-label
+            const hintHtml = (q.hint && q.type !== 'checkbox_single') ? `<span class="form-hint">${q.hint}</span>` : '';
+            
+            // Only show the bold label if it's NOT an agreement checkbox (looks cleaner)
+            const labelTextHtml = (q.type === 'checkbox_single') ? `<label class="form-label" style="margin-bottom:0;">${q.label}${reqHtml}</label>` : `<label class="form-label">${q.label}${reqHtml}${hintHtml}</label>`;
+
+            let extraUi = '';
+            if (q.id === 'student_id') {
+                extraUi = `<div id="autofillNotice" class="autofill-indicator" style="display:none;">✨ Profile auto-filled from a previous application!</div>`;
+            }
+
+            container.innerHTML += `
+                <div class="form-group ${q.width === 'half' ? 'half-width' : 'full-width'}">
+                    ${labelTextHtml}
+                    ${inputHtml}
+                    ${extraUi}
+                </div>
+            `;
+
+            // Hardcoded Conditional Injections based on Core IDs
+            if (q.id === 'food_license') {
+                container.innerHTML += `
+                <div id="foodLicenseUploadSection" class="conditional-section full-width">
+                    <label class="form-label">
+                        If you answered yes, please provide a photo or screenshot of your AZ food handlers license!<span class="required-mark">*</span>
+                        <span class="form-hint">(make sure we are able to open the document - Image formats only). It will be automatically compressed.</span>
+                    </label>
+                    <input type="hidden" id="formFoodLicenseLinkHidden">
+                    <div id="existingLicenseLink" style="margin-bottom: 10px; font-size: 0.9rem;"></div>
+                    <input type="file" id="formFoodLicenseFile" class="control-item" accept="image/*" />
+                </div>`;
+            }
+            if (q.id === 'needs_power') {
+                container.innerHTML += `
+                <div id="powerAgreementSection" class="conditional-section full-width">
+                    <label class="form-label" style="color: #FFD60A;">ELECTRICITY VENDORS:<span class="required-mark">*</span></label>
+                    <p style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 15px;">Due to the increase in electrical needs at our markets, we are no longer able to provide access to electricity that will accommodate every vendor. This means that electricity from Prescott Field will be available on a first-come, first-served basis. We will not be able to provide extension cords, and we will not be responsible for fixing power issues if the breaker is tripped. Because of this, we STRONGLY encourage vendors to invest in or find other ways to have portable power at our student markets the rest of the semester. We apologize for the inconvenience and appreciate your understanding and cooperation!</p>
+                    <label class="custom-checkbox" style="background: rgba(255, 214, 10, 0.1); border-color: rgba(255, 214, 10, 0.2);">
+                        <input type="checkbox" id="powerAgreementCheck"><span>I acknowledge that I have read this statement</span>
+                    </label>
+                </div>`;
+            }
+        });
+    }
+
+    // --- ADMIN PANEL BUILDER ---
+
+    function showAdminGate() { document.getElementById('gateModal').classList.add('show'); }
+    function hideAdminGate() { document.getElementById('gateModal').classList.remove('show'); document.getElementById('adminPass').value = ''; }
+
+    function verifyAdmin() {
+        if (document.getElementById('adminPass').value === 'Vendor49!') {
+            hideAdminGate();
+            renderAdminPanel();
+            switchView('admin');
+        } else { showToast('Invalid Password', true); }
+    }
+
+    function renderAdminPanel() {
+        document.getElementById('adminHeaderUrl').value = formConfig.headerUrl || "";
+        document.getElementById('adminTitle').value = formConfig.title || "";
+        document.getElementById('adminDesc').value = formConfig.description || "";
+        renderAdminQuestionsList();
+    }
+
+    function renderAdminQuestionsList() {
+        const list = document.getElementById('adminQuestionsList');
+        list.innerHTML = '';
+
+        formConfig.questions.forEach((q, index) => {
+            const isSec = q.type === 'section_header';
+            let innerContent = '';
+
+            if (isSec) {
+                innerContent = `
+                    <div style="margin-bottom: 10px;">
+                        <label class="form-hint" style="text-align:left; color:#fff; margin-bottom: 5px;">Section Header Text</label>
+                        <input type="text" class="control-item" value="${q.label}" onchange="updateQ(${index}, 'label', this.value)" style="border-color: #BF5AF2;">
+                    </div>
+                `;
+            } else {
+                innerContent = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+                        <div>
+                            <label class="form-hint" style="text-align:left; color:#fff; margin-bottom: 5px;">Question Label</label>
+                            <input type="text" class="control-item" value="${q.label}" onchange="updateQ(${index}, 'label', this.value)">
+                        </div>
+                        <div>
+                            <label class="form-hint" style="text-align:left; color:#fff; margin-bottom: 5px;">Input Type</label>
+                            <select class="control-item" onchange="updateQ(${index}, 'type', this.value); renderAdminQuestionsList();" ${q.isCore ? 'disabled title="Cannot change type of core fields"' : ''}>
+                                <option value="text" ${q.type === 'text' ? 'selected' : ''}>Short Text</option>
+                                <option value="email" ${q.type === 'email' ? 'selected' : ''}>Email</option>
+                                <option value="number" ${q.type === 'number' ? 'selected' : ''}>Number</option>
+                                <option value="tel" ${q.type === 'tel' ? 'selected' : ''}>Phone</option>
+                                <option value="textarea" ${q.type === 'textarea' ? 'selected' : ''}>Paragraph</option>
+                                <option value="dropdown" ${q.type === 'dropdown' ? 'selected' : ''}>Dropdown Menu</option>
+                                <option value="checkbox_single" ${q.type === 'checkbox_single' ? 'selected' : ''}>Agreement Checkbox</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label class="form-hint" style="text-align:left; color:#fff; margin-bottom: 5px;">Help Text / Hint (Optional)</label>
+                        <input type="text" class="control-item" value="${q.hint || ''}" onchange="updateQ(${index}, 'hint', this.value)">
+                    </div>
+                    ${q.type === 'dropdown' ? `
+                    <div style="margin-bottom: 10px;">
+                        <label class="form-hint" style="text-align:left; color:#FFD60A; margin-bottom: 5px;">Dropdown Options (Comma Separated)</label>
+                        <input type="text" class="control-item" placeholder="Option 1, Option 2, Option 3" value="${q.options || ''}" onchange="updateQ(${index}, 'options', this.value)">
+                    </div>` : ''}
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px;">
+                        <label class="custom-checkbox" style="margin: 0; padding: 10px; border:none; background:transparent;">
+                            <input type="checkbox" ${q.required ? 'checked' : ''} onchange="updateQ(${index}, 'required', this.checked)">
+                            <span>Required</span>
+                        </label>
+                        <label class="custom-checkbox" style="margin: 0; padding: 10px; border:none; background:transparent;">
+                            <input type="checkbox" ${q.width === 'half' ? 'checked' : ''} onchange="updateQ(${index}, 'width', this.checked ? 'half' : 'full')">
+                            <span>Half-Width</span>
+                        </label>
+                    </div>
+                `;
+            }
+
+            list.innerHTML += `
+                <div class="builder-q-card" style="${isSec ? 'border-left: 4px solid #BF5AF2;' : ''}">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                        <div style="display:flex; gap: 5px;">
+                            <button class="builder-move-btn" onclick="moveQ(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                            <button class="builder-move-btn" onclick="moveQ(${index}, 1)" ${index === formConfig.questions.length - 1 ? 'disabled' : ''}>↓</button>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            ${q.isCore ? '<span style="font-size:0.7rem; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">Core DB Tag: '+q.id+'</span>' : ''}
+                            <button class="builder-q-remove" style="position:static;" onclick="deleteQ(${index})" title="Delete Question">&times;</button>
+                        </div>
+                    </div>
+                    ${innerContent}
+                </div>
+            `;
+        });
+    }
+
+    function addCustomQuestion(type) {
+        if (type === 'section_header') {
+            formConfig.questions.push({ id: 'sec_' + Date.now(), type: 'section_header', label: 'New Section Header', width: 'full', isCore: false });
+        } else {
+            formConfig.questions.push({ id: 'custom_' + Date.now(), type: 'text', label: 'New Question', hint: '', options: '', required: false, width: 'full', isCore: false });
+        }
+        renderAdminQuestionsList();
+    }
+
+    function deleteQ(index) {
+        if (confirm("Remove this item from the application form?")) {
+            formConfig.questions.splice(index, 1);
+            renderAdminQuestionsList();
+        }
+    }
+
+    function moveQ(index, dir) {
+        const newIndex = index + dir;
+        if (newIndex < 0 || newIndex >= formConfig.questions.length) return;
+        const temp = formConfig.questions[index];
+        formConfig.questions[index] = formConfig.questions[newIndex];
+        formConfig.questions[newIndex] = temp;
+        renderAdminQuestionsList();
+    }
+
+    function updateQ(index, key, value) {
+        formConfig.questions[index][key] = value;
+    }
+
+    async function saveAdminConfig() {
+        const btn = document.getElementById('adminSaveBtn');
+        const loader = document.getElementById('adminSaveLoader');
+        btn.disabled = true; loader.style.display = 'block';
+
+        formConfig.headerUrl = document.getElementById('adminHeaderUrl').value;
+        formConfig.title = document.getElementById('adminTitle').value;
+        formConfig.description = document.getElementById('adminDesc').value;
+
+        try {
+            const { error } = await _supabase.from('secrets').upsert([
+                { name: 'MARKET_FORM_CONFIG_V3', value: JSON.stringify(formConfig) }
+            ], { onConflict: 'name' });
+
+            if (error) throw error;
+
+            showToast("Settings Saved!");
+            renderPublicForm();
+            switchView('application');
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to save settings. Check DB permissions.", true);
+        } finally {
+            btn.disabled = false; loader.style.display = 'none';
+        }
+    }
+
+
+    // --- SPECIFIC UI LOGIC ---
+
+    function toggleFoodLicense() {
+        const el = document.getElementById('form_food_license');
+        const section = document.getElementById('foodLicenseUploadSection');
+        if (el && section) {
+            if (el.value === 'Yes') section.style.display = 'block';
+            else { section.style.display = 'none'; document.getElementById('formFoodLicenseFile').value = ''; }
+        }
+    }
+
+    function togglePowerAgreement() {
+        const el = document.getElementById('form_needs_power');
+        const section = document.getElementById('powerAgreementSection');
+        if (el && section) {
+            if (el.value === 'Yes') section.style.display = 'block';
+            else { section.style.display = 'none'; document.getElementById('powerAgreementCheck').checked = false; }
+        }
+    }
+
+    // Auto-fill logic
+    async function checkExistingVendor() {
+        const el = document.getElementById('form_student_id');
+        if (!el) return;
+        const studentId = el.value.trim();
+        if (!studentId || studentId.length < 3) return; 
+
+        try {
+            const { data, error } = await _supabase.from('vendors').select('*').eq('student_id', studentId).order('created_at', { ascending: false }).limit(1);
+
+            if (data && data.length > 0) {
+                const v = data[0];
+                
+                // Map DB columns back to form inputs
+                const mappings = {
+                    'first_name': v.first_name, 'last_name': v.last_name, 'preferred_email': v.preferred_email,
+                    'gcu_email': v.gcu_email, 'phone': v.phone, 'communication_method': v.communication_method,
+                    'year': v.year, 'past_vendor': v.past_vendor, 'availability': v.availability,
+                    'description': v.description, 'link': v.link, 'food_license': v.food_license,
+                    'needs_power': v.needs_power
+                };
+
+                for (const [id, val] of Object.entries(mappings)) {
+                    const input = document.getElementById('form_' + id);
+                    if (input && val) input.value = val;
+                }
+
+                // Trigger dependent UIs
+                toggleFoodLicense();
+                togglePowerAgreement();
+                
+                if(v.food_license_link && document.getElementById('formFoodLicenseLinkHidden')) {
+                    document.getElementById('formFoodLicenseLinkHidden').value = v.food_license_link;
+                    document.getElementById('existingLicenseLink').innerHTML = `<a href="${v.food_license_link}" target="_blank" style="color: #0A84FF; font-weight: bold; text-decoration: none;">View Previously Uploaded License ↗</a> <br><span style="color: var(--text-muted); font-size: 0.8rem;">(Uploading a new file below will replace this)</span>`;
+                }
+
+                const notice = document.getElementById('autofillNotice');
+                if(notice) { notice.style.display = 'inline-block'; setTimeout(() => { notice.style.display = 'none'; }, 5000); }
+            }
+        } catch (err) { console.error("Auto-fill error:", err); }
+    }
+
+    async function compressImage(file, maxWidth = 1000, quality = 0.6) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image(); img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width; let height = img.height;
+                    if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => { resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() })); }, 'image/jpeg', quality);
+                }; img.onerror = reject;
+            }; reader.onerror = reject;
+        });
+    }
+
+    async function submitApplication() {
+        const btn = document.getElementById('submitBtn');
+        const loader = document.getElementById('submitLoader');
+        const btnText = document.getElementById('submitBtnText');
+        
+        // Base Payload (Fallback empty strings prevent SQL NOT NULL errors if a core question was deleted)
+        const payload = {
+            event_id: document.getElementById('formEventId').value,
+            status: 'Needs Review', email_sent: 'No',
+            student_id: '', first_name: '', last_name: '', preferred_email: '', gcu_email: '', phone: '',
+            communication_method: '', year: '', past_vendor: '', availability: '', description: '', link: '',
+            food_license: '', food_license_link: '', needs_power: '', additional_comments: '', agreements_checked: ''
+        };
+
+        if (!payload.event_id) return showToast("Please select a Market.", true);
+
+        let customAnswers = [];
+
+        // Dynamic Field Collection & Validation
+        for (let q of formConfig.questions) {
+            if (q.type === 'section_header') continue;
+            
+            const el = document.getElementById('form_' + q.id);
+            if (!el) continue; // If missing from DOM, skip
+
+            let val = '';
+            if (q.type === 'checkbox_single') val = el.checked ? 'Yes' : 'No';
+            else val = el.value.trim();
+
+            if (q.required && (!val || (q.type === 'checkbox_single' && val === 'No'))) {
+                return showToast(`Please answer: ${q.label}`, true);
+            }
+
+            if (q.isCore) {
+                payload[q.id] = val;
+            } else {
+                if (val && val !== 'No') customAnswers.push(`${q.label}: ${val}`);
+            }
+        }
+
+        // Special Condition Integrations
+        if (payload.food_license === 'Yes') {
+            const fileInput = document.getElementById('formFoodLicenseFile');
+            const hiddenLink = document.getElementById('formFoodLicenseLinkHidden')?.value;
+            if (!fileInput?.files[0] && !hiddenLink) return showToast("Please upload a photo of your food handlers license.", true);
+        }
+
+        if (payload.needs_power === 'Yes') {
+            const pCheck = document.getElementById('powerAgreementCheck');
+            if (pCheck && !pCheck.checked) return showToast("You must agree to the electricity terms.", true);
+        }
+
+        // Append custom answers
+        if (customAnswers.length > 0) {
+            payload.additional_comments += (payload.additional_comments ? '\n\n' : '') + `--- Additional Question Responses ---\n` + customAnswers.join('\n');
+        }
+
+        btn.disabled = true; loader.style.display = 'block';
+
+        try {
+            // Upload Logic
+            if (payload.food_license === 'Yes') {
+                const fileInput = document.getElementById('formFoodLicenseFile');
+                const hiddenLink = document.getElementById('formFoodLicenseLinkHidden')?.value;
+                if (fileInput && fileInput.files[0]) {
+                    btnText.innerText = "Compressing Image...";
+                    const compressedFile = await compressImage(fileInput.files[0]);
+                    
+                    btnText.innerText = "Uploading Image...";
+                    const fileName = `license_${payload.student_id || Date.now()}_${Date.now()}.jpg`;
+                    const { data: uploadData, error: uploadError } = await _supabase.storage.from('licenses').upload(fileName, compressedFile, { contentType: 'image/jpeg' });
+                    
+                    if (uploadError) throw new Error("Failed to upload image. Does the 'licenses' bucket exist?");
+                    const { data: publicUrlData } = _supabase.storage.from('licenses').getPublicUrl(fileName);
+                    payload.food_license_link = publicUrlData.publicUrl;
+                } else {
+                    payload.food_license_link = hiddenLink || '';
+                }
+            }
+
+            btnText.innerText = "Saving Application...";
+            const { error } = await _supabase.from('vendors').insert([payload]);
+            if (error) throw error;
+
+            switchView('success'); fireConfetti();
+
+        } catch (err) {
+            console.error(err);
+            showToast(err.message || "Error submitting application. Please try again.", true);
+        } finally {
+            btn.disabled = false; loader.style.display = 'none'; btnText.innerText = "Submit Application";
+        }
+    }
+
+    function switchView(viewName) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        const target = document.getElementById(viewName + 'View');
+        if (target) target.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showToast(msg, isError = false) { 
+        const t = document.getElementById('toast'); 
+        t.textContent = msg; 
+        t.style.background = isError ? 'var(--gradient-fire)' : 'var(--gradient-success)';
+        t.style.display = 'block'; 
+        setTimeout(() => t.style.display = 'none', 5000); 
+    }
+</script>
+</body>
+</html>
