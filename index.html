@@ -62,22 +62,19 @@
         .section-header { font-size: 1.1rem; font-weight: 800; color: #BF5AF2; margin-bottom: 12px; margin-top: 10px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px; }
         .section-header::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
 
-        /* Updated Form Group for alignment */
         .form-group { 
             margin-bottom: 20px; 
             width: 100%; 
             display: flex; 
             flex-direction: column; 
-            height: 100%; /* Ensures equal height in grid columns */
+            height: 100%;
         }
         
-        /* Adjusted bottom margin to add a little more space between label and box */
         .form-label { display: block; margin-bottom: 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.3; width: 100%; }
         .form-hint { display: block; margin-top: 4px; margin-bottom: 12px; color: rgba(255,255,255,0.4); font-size: 0.75rem; line-height: 1.3; text-transform: none; font-weight: 400; letter-spacing: 0; }
 
         .required-mark { color: #FF3B30; margin-left: 4px; font-weight: bold; }
 
-        /* ALIGNMENT MAGIC: Pushes controls to the bottom of their grid cell */
         .form-group > .control-item,
         .form-group > .custom-checkbox {
             margin-top: auto;
@@ -136,7 +133,6 @@
         
         .autofill-indicator { font-size: 0.8rem; color: #34C759; margin-top: 8px; display: none; font-weight: bold; background: rgba(52, 199, 89, 0.1); padding: 8px 12px; border-radius: 8px; display: inline-block; }
 
-        /* Dynamic Grid Layout - Updated with Grid Alignment */
         .dynamic-form-grid { 
             display: grid; 
             grid-template-columns: 1fr; 
@@ -149,10 +145,9 @@
             }
             .full-width { grid-column: 1 / -1; }
             .half-width { grid-column: span 1; }
-            .dynamic-form-grid .form-group { margin-bottom: 0; } /* Grid handles spacing */
+            .dynamic-form-grid .form-group { margin-bottom: 0; } 
         }
 
-        /* Market Selection */
         #marketSelectionContainer { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .market-option { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; }
         .market-option.selected { border-color: #0A84FF; background: rgba(10, 132, 255, 0.1); }
@@ -160,7 +155,9 @@
         .market-name { font-weight: 800; color: #fff; font-size: 0.95rem; display: block; }
         .market-meta { font-size: 0.75rem; color: var(--text-muted); display: block; }
 
-        /* Admin Gate Modal */
+        .summary-label { font-size: 0.7rem; color: #BF5AF2; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; text-align: center; }
+        .summary-value { font-size: 1rem; color: #fff; display: block; margin-bottom: 20px; font-weight: 600; line-height: 1.4; text-align: center; }
+
         .modal { position: fixed; inset: 0; z-index: 1000; display: none; justify-content: center; align-items: center; padding: 16px; }
         .modal.show { display: flex; }
         .modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
@@ -210,12 +207,22 @@
 
     <!-- SUCCESS VIEW -->
     <div id="successView" class="view">
-        <div class="frosted survey-card" style="text-align: center;">
-            <div class="success-icon">✓</div>
-            <h2 style="margin-top:0">Application Received!</h2>
-            <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 32px;">
-                Thank you for applying! Your application is now under review. Keep an eye on your email for updates.
-            </p>
+        <div class="frosted survey-card">
+            <div style="text-align: center;">
+                <div class="success-icon">✓</div>
+                <h2 style="margin-top:0" id="successGreeting">Application Received!</h2>
+                <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 24px;">
+                    Thank you for applying! Your application is now under review. Keep an eye on your email for updates.
+                </p>
+            </div>
+
+            <div id="summaryContainer" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; margin: 0 auto 32px; max-width: 500px; text-align: center;">
+                <div id="summaryHeader" style="font-size: 1.2rem; font-weight: 800; color: #BF5AF2; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;">
+                    Submission Summary
+                </div>
+                <div id="summaryContent"></div>
+            </div>
+
             <div class="center-btn-wrapper">
                 <button class="btn btn-primary" onclick="window.location.reload()">Return to Start</button>
             </div>
@@ -265,7 +272,6 @@
 
     let allEventsData = [];
 
-    // EXACT DEFAULT QUESTIONS ARRAY (V8 - Splitting Name for DB constraints)
     const defaultQuestions = [
         { id: 'section_personal', type: 'section_header', label: 'Personal Information', width: 'full', isCore: true },
         { id: 'student_id', type: 'number', label: 'Student ID Number', hint: 'Type your ID and tap away to auto-fill your info if you\'ve applied before!', required: true, width: 'full', isCore: true },
@@ -430,13 +436,12 @@
 
     // --- SUBMISSION ---
     async function submitApplication() {
-        const selectedMarkets = Array.from(document.querySelectorAll('input[name="marketChoice"]:checked')).map(cb => cb.value);
-        if(selectedMarkets.length === 0) return showToast("Select at least one market", true);
+        const selectedMarketIds = Array.from(document.querySelectorAll('input[name="marketChoice"]:checked')).map(cb => cb.value);
+        if(selectedMarketIds.length === 0) return showToast("Select at least one market", true);
         const btn = document.getElementById('submitBtn');
         
         // Base Payload
-        const basePayload = { status: 'Needs Review', email_sent: 'No', first_name: '', last_name: '' };
-        let customs = [];
+        const basePayload = { status: 'Pending', email_sent: 'No', first_name: '', last_name: '' };
         
         for(let q of formConfig.questions) {
             if(q.type==='section_header') continue;
@@ -450,36 +455,72 @@
                 }
             }
 
-            // Handle the combined name logic to satisfy DB NOT NULL constraints
             if(q.id === 'full_name_combined') {
                 const parts = val.split(' ');
                 basePayload.first_name = parts[0] || val;
-                basePayload.last_name = parts.slice(1).join(' ') || '.'; // Default to dot if no last name provided
+                basePayload.last_name = parts.slice(1).join(' ') || '.'; 
             }
 
-            if(q.isCore) basePayload[q.id] = val; else if(val && val !== 'No') customs.push(`${q.label}: ${val}`);
+            if(q.isCore) basePayload[q.id] = val; 
         }
+
+        const agreementLabels = formConfig.questions.filter(q => q.id.startsWith('agree_')).map(q => `${q.label}: Yes`);
+        basePayload.agreements_checked = agreementLabels.join('\n');
 
         // Upload Logic
         if (basePayload.food_license==='Yes') {
              const file = document.getElementById('formFoodLicenseFile').files[0];
              const existing = document.getElementById('formFoodLicenseLinkHidden').value;
              if(!file && !existing) return showToast("Upload license photo", true);
+             
              if(file) {
                  const comp = await compressImage(file);
                  const path = `license_${Date.now()}.jpg`;
                  await _supabase.storage.from('licenses').upload(path, comp);
                  basePayload.food_license_link = _supabase.storage.from('licenses').getPublicUrl(path).data.publicUrl;
+             } else {
+                 basePayload.food_license_link = existing;
              }
         }
         if (basePayload.needs_power==='Yes' && !document.getElementById('powerAgreementCheck').checked) return showToast("Agree to power terms", true);
-        if (customs.length > 0) basePayload.additional_comments = (basePayload.additional_comments || '') + '\n\n' + customs.join('\n');
+        
+        const actualComments = document.getElementById('form_additional_comments')?.value.trim() || '';
+        basePayload.additional_comments = actualComments;
         
         btn.disabled = true;
         try {
-            const inserts = selectedMarkets.map(id => ({ ...basePayload, event_id: id }));
+            const inserts = selectedMarketIds.map(id => ({ ...basePayload, event_id: id }));
             const { error } = await _supabase.from('vendors').insert(inserts);
             if(error) throw error;
+
+            // Simple Centered Summary View
+            const selectedMarketNames = selectedMarketIds.map(id => allEventsData.find(ev => ev.id === id)?.name || 'Unknown Market');
+            document.getElementById('successGreeting').innerText = `Thank you, ${basePayload.first_name}!`;
+            
+            let summaryHtml = `
+                <span class="summary-label">Applied For</span>
+                <span class="summary-value">${selectedMarketNames.join(', ')}</span>
+
+                <span class="summary-label">Student ID</span>
+                <span class="summary-value">${basePayload.student_id}</span>
+
+                <span class="summary-label">Email</span>
+                <span class="summary-value">${basePayload.preferred_email}</span>
+
+                <span class="summary-label">Project Description</span>
+                <span class="summary-value">${basePayload.description}</span>
+
+                <span class="summary-label">Needs Power?</span>
+                <span class="summary-value">${basePayload.needs_power}</span>
+
+                <span class="summary-label">Stay Entire Event?</span>
+                <span class="summary-value">${basePayload.availability}</span>
+
+                <span class="summary-label">Social Media / Link</span>
+                <span class="summary-value">${basePayload.link}</span>
+            `;
+            document.getElementById('summaryContent').innerHTML = summaryHtml;
+
             switchView('success'); confetti();
         } catch(e) { console.error(e); showToast("Submission failed", true); }
         finally { btn.disabled = false; }
@@ -487,6 +528,7 @@
 
     function toggleFoodLicense() { let s = document.getElementById('foodLicenseUploadSection'); if(s) s.style.display = document.getElementById('form_food_license').value==='Yes'?'block':'none'; }
     function togglePowerAgreement() { let s = document.getElementById('powerAgreementSection'); if(s) s.style.display = document.getElementById('form_needs_power').value==='Yes'?'block':'none'; }
+    
     async function checkExistingVendor() {
         const id = document.getElementById('form_student_id').value.trim();
         if(id.length < 4) return;
@@ -495,11 +537,21 @@
             const v = data[0];
             formConfig.questions.forEach(q => { 
                 const el = document.getElementById('form_'+q.id); 
-                if(el) {
+                if(el && q.id !== 'additional_comments') {
                     if (q.id === 'full_name_combined') el.value = (v.first_name + ' ' + v.last_name).trim();
                     else if (v[q.id]) el.value = v[q.id];
                 }
             });
+
+            if (v.food_license_link) {
+                document.getElementById('formFoodLicenseLinkHidden').value = v.food_license_link;
+                document.getElementById('existingLicenseLink').innerHTML = `
+                    <div style="color:#34C759; font-size:0.85rem; margin:10px 0; font-weight:800; background:rgba(52,199,89,0.1); padding:10px; border-radius:10px; border:1px solid rgba(52,199,89,0.2);">
+                        ✅ Existing food handlers license found on file. <br>
+                        <span style="font-size:0.7rem; font-weight:400; color:rgba(255,255,255,0.6);">You do not need to re-upload unless your license has expired.</span>
+                    </div>`;
+            }
+
             toggleFoodLicense(); togglePowerAgreement();
             document.getElementById('autofillNotice').style.display = 'inline-block';
         }
