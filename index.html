@@ -423,6 +423,7 @@
     let allEventsData = [];
     let currentTab = 0;
     let isNavigating = false;
+    let isAppClosed = false;
 
     const defaultQuestions = [
         { id: 'section_personal', type: 'section_header', label: 'Personal Information', width: 'full', isCore: true },
@@ -453,42 +454,91 @@
         { id: 'additional_comments', type: 'textarea', label: 'Additional Comments, Requests, or Anything You May Need From CAB to Run Your Table Smoothly', hint: 'For any additional questions or concerns, please email lopetownmarket@gmail.com. Thank you for your time!', required: false, width: 'full', isCore: true }
     ];
 
-    let formConfig = { headerUrl: "https://lh3.googleusercontent.com/d/177iu9igWGiUkD8vdJhZn80PXgLa6hM3c", questions: [] };
+    let formConfig = { headerUrl: "https://lh3.googleusercontent.com/d/177iu9igWGiUkD8vdJhZn80PXgLa6hM3c", questions: [], forceStatus: 'auto', eventTitle: null, eventDesc: null };
 
     window.onload = async () => {
-        await loadEvents();
+        // Load configurations and access controls first
         await loadConfig();
+        // Load Events according to the configs
+        await loadEvents();
         
-        // Setup Step 0 specific input validation for the custom big button
+        // Setup Step 0 specific input validation
         document.getElementById('studentIdContainer').addEventListener('input', () => {
             const idInput = document.getElementById('form_student_id');
             const step0Btn = document.getElementById('step0-next-btn');
             if (idInput && step0Btn) {
-                step0Btn.disabled = idInput.value.trim().length < 3;
+                if (isAppClosed) {
+                    step0Btn.disabled = true;
+                } else {
+                    step0Btn.disabled = idInput.value.trim().length < 3;
+                }
             }
         });
     };
+
+    function updateClosedUI(msg) {
+        document.getElementById('marketSelectionContainer').innerHTML = '<div style="color:#FF3B30">Applications are currently closed.</div>';
+        document.getElementById('nextBtn').disabled = true;
+        document.getElementById('appDesc').innerHTML = msg;
+        
+        const step0Btn = document.getElementById('step0-next-btn');
+        if (step0Btn) {
+            step0Btn.disabled = true;
+            step0Btn.innerText = "APPLICATIONS CLOSED";
+        }
+        
+        const welcomeDesc = document.querySelector('#step-0 p');
+        if (welcomeDesc) welcomeDesc.innerText = msg;
+    }
 
     async function loadEvents() {
         try {
             const { data, error } = await _supabase.from('events').select('*').order('created_at', { ascending: false });
             const container = document.getElementById('marketSelectionContainer');
+            
             if (error || !data || data.length === 0) {
-                container.innerHTML = '<div style="color:#FF3B30">No markets open.</div>';
+                isAppClosed = true;
+                updateClosedUI("There are currently no active application windows.");
                 return;
             }
+            
             allEventsData = data;
             const now = new Date();
-            let openMarkets = data.filter(e => {
-                return (!e.app_open || new Date(e.app_open) <= now) && (!e.app_close || new Date(e.app_close) >= now);
-            });
+            
+            let openMarkets = data;
+            
+            // Check Access Control configurations
+            if (formConfig.forceStatus === 'closed') {
+                openMarkets = [];
+            } else if (formConfig.forceStatus === 'auto') {
+                openMarkets = data.filter(e => {
+                    return (!e.app_open || new Date(e.app_open) <= now) && (!e.app_close || new Date(e.app_close) >= now);
+                });
+            }
+            // If formConfig.forceStatus === 'open', bypass filtering by dates to let late vendors apply
+
             if (openMarkets.length === 0) {
-                container.innerHTML = '<div style="color:#FF3B30">No active application windows.</div>';
-                document.getElementById('nextBtn').disabled = true;
-                document.getElementById('appDesc').innerHTML = "There are currently no active application windows. Please check back later!";
+                isAppClosed = true;
+                updateClosedUI("There are currently no active application windows. Please check back later!");
             } else {
+                isAppClosed = false;
                 document.getElementById('nextBtn').disabled = false;
-                document.getElementById('appDesc').innerHTML = "Select one or more markets below to apply. <strong>(You may select multiple)</strong>";
+                
+                // Update Welcome Screen text back to active state
+                const welcomeDesc = document.querySelector('#step-0 p');
+                if (welcomeDesc) welcomeDesc.innerText = "Please enter your Student ID to begin the application.";
+                
+                const step0Btn = document.getElementById('step0-next-btn');
+                if (step0Btn) step0Btn.innerText = "Start Application";
+
+                // Setup Dynamic Title & Description matched from Admin
+                if (formConfig.eventTitle) document.getElementById('appTitle').innerHTML = formConfig.eventTitle;
+                
+                if (formConfig.eventDesc) {
+                    document.getElementById('appDesc').innerHTML = formConfig.eventDesc + "<br><br><strong>Select one or more markets below to apply:</strong>";
+                } else {
+                    document.getElementById('appDesc').innerHTML = "Select one or more markets below to apply. <strong>(You may select multiple)</strong>";
+                }
                 
                 container.innerHTML = openMarkets.map(e => {
                     const d = new Date(e.market_date + 'T12:00:00');
@@ -536,9 +586,10 @@
 
     async function loadConfig() {
         try {
-            const { data } = await _supabase.from('secrets').select('value').eq('name', 'MARKET_FORM_CONFIG_V8').maybeSingle();
-            if (data?.value) {
-                let p = JSON.parse(data.value);
+            // Load Builder Config (V8)
+            const { data: v8Data } = await _supabase.from('secrets').select('value').eq('name', 'MARKET_FORM_CONFIG_V8').maybeSingle();
+            if (v8Data?.value) {
+                let p = JSON.parse(v8Data.value);
                 formConfig.headerUrl = p.headerUrl || formConfig.headerUrl;
                 
                 // Force update to new image if old config was cached in Supabase
@@ -550,8 +601,24 @@
             } else {
                 formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions));
             }
+
+            // Load Admin Access Control Config (V3)
+            const { data: v3Data } = await _supabase.from('secrets').select('value').eq('name', 'MARKET_FORM_CONFIG_V3').maybeSingle();
+            if (v3Data?.value) {
+                let p3 = JSON.parse(v3Data.value);
+                formConfig.forceStatus = p3.forceStatus || 'auto';
+                formConfig.eventTitle = p3.title || null;
+                formConfig.eventDesc = p3.description || null;
+            } else {
+                formConfig.forceStatus = 'auto';
+            }
+
             renderPublicForm();
-        } catch (e) { formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions)); renderPublicForm(); }
+        } catch (e) { 
+            formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions)); 
+            formConfig.forceStatus = 'auto';
+            renderPublicForm(); 
+        }
     }
 
     function generateFieldHtml(q) {
