@@ -170,7 +170,7 @@
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; background: var(--gradient-success); font-weight: 700; z-index: 2000; display: none; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); color: #fff; }
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; background: var(--gradient-success); font-weight: 700; z-index: 3000; display: none; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); color: #fff; }
         
         footer { margin-top:auto; padding:60px 0 40px; text-align:center; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.02em; }
         .welcome-active footer { margin-top: 0; padding: 32px 0 10px; }
@@ -277,6 +277,54 @@
             box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15); 
             background: rgba(255,255,255,0.08);
         }
+
+        /* Status Card Specific UI */
+        .status-market-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .status-market-card:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.2); }
+        .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .status-name { font-weight: 800; font-size: 1.1rem; color: #fff; line-height: 1.2; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .status-meta { font-size: 0.8rem; color: var(--text-muted); display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; margin-bottom: 16px; }
+        .resend-btn { 
+            width: 100%; background: rgba(10, 132, 255, 0.1); border: 1px solid rgba(10, 132, 255, 0.3); 
+            color: #0A84FF; padding: 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; 
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .resend-btn:hover { background: rgba(10, 132, 255, 0.2); border-color: #0A84FF; color: #fff; }
+        .resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Welcome Screen Status Link Styling */
+        #step0-status-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            text-decoration: underline;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: 0.2s;
+            display: block;
+            opacity: 1;
+        }
+        #step0-status-btn:disabled {
+            opacity: 0.3;
+            text-decoration: none;
+            cursor: not-allowed;
+        }
+        #step0-status-btn:hover:not(:disabled) {
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -316,8 +364,8 @@
                         </div>
                         <button id="step0-next-btn" class="big-action-btn" onclick="nextPrev(1)" disabled>Start Application</button>
                         
-                        <!-- Check Status Button -->
-                        <button id="step0-status-btn" class="btn btn-ghost" style="width: 100%; margin-top: 15px; font-size: 0.9rem;" onclick="checkStatus()" disabled>Check Application Status</button>
+                        <!-- Status Check Underline Link -->
+                        <button id="step0-status-btn" onclick="checkStatus()" disabled>Check Application Status</button>
                     </div>
                 </div>
 
@@ -420,13 +468,12 @@
 <!-- Application Status Modal -->
 <div id="statusModal" class="modal">
     <div class="modal-bg" onclick="document.getElementById('statusModal').classList.remove('show')"></div>
-    <div class="modal-content" style="max-width: 500px; text-align: left;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-            <h3 style="margin:0; font-size: 1.5rem; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Application Status</h3>
-            <button onclick="document.getElementById('statusModal').classList.remove('show')" style="background:none; border:none; color:#fff; font-size:1.8rem; cursor:pointer; line-height: 1;">&times;</button>
+    <div class="modal-content" style="max-width: 500px; text-align: left; background: #0a0a0a; border-radius: 32px; padding: 32px; box-shadow: 0 0 100px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+            <h3 style="margin:0; font-size: 1.6rem; font-weight: 900; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: -0.02em;">My Applications</h3>
+            <button onclick="document.getElementById('statusModal').classList.remove('show')" style="background:rgba(255,255,255,0.05); border:none; color:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer; line-height: 36px; text-align:center;">&times;</button>
         </div>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0; margin-bottom: 20px;">Showing applications for upcoming markets.</p>
-        <div id="statusModalContent" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
+        <div id="statusModalContent" style="max-height: 60vh; overflow-y: auto; padding-right: 5px; scrollbar-width: none;"></div>
     </div>
 </div>
 
@@ -474,12 +521,9 @@
     let formConfig = { headerUrl: "https://lh3.googleusercontent.com/d/177iu9igWGiUkD8vdJhZn80PXgLa6hM3c", questions: [], forceStatus: 'auto', eventTitle: null, eventDesc: null };
 
     window.onload = async () => {
-        // Load configurations and access controls first
         await loadConfig();
-        // Load Events according to the configs
         await loadEvents();
         
-        // Setup Step 0 specific input validation
         document.getElementById('studentIdContainer').addEventListener('input', () => {
             const idInput = document.getElementById('form_student_id');
             const step0Btn = document.getElementById('step0-next-btn');
@@ -487,15 +531,11 @@
             
             if (idInput && step0Btn) {
                 const isValid = idInput.value.trim().length >= 3;
-                
-                // Keep Next button logic tied to application being open
                 if (isAppClosed) {
                     step0Btn.disabled = true;
                 } else {
                     step0Btn.disabled = !isValid;
                 }
-                
-                // Allow "Check Status" to work ALWAYS (even if applications are closed)
                 if (statusBtn) {
                     statusBtn.disabled = !isValid;
                 }
@@ -531,10 +571,8 @@
             
             allEventsData = data;
             const now = new Date();
-            
             let openMarkets = data;
             
-            // Check Access Control configurations
             if (formConfig.forceStatus === 'closed') {
                 openMarkets = [];
             } else if (formConfig.forceStatus === 'auto') {
@@ -542,7 +580,6 @@
                     return (!e.app_open || new Date(e.app_open) <= now) && (!e.app_close || new Date(e.app_close) >= now);
                 });
             }
-            // If formConfig.forceStatus === 'open', bypass filtering by dates to let late vendors apply
 
             if (openMarkets.length === 0) {
                 isAppClosed = true;
@@ -551,14 +588,12 @@
                 isAppClosed = false;
                 document.getElementById('nextBtn').disabled = false;
                 
-                // Update Welcome Screen text back to active state
                 const welcomeDesc = document.querySelector('#step-0 p');
                 if (welcomeDesc) welcomeDesc.innerText = "Please enter your Student ID to begin the application.";
                 
                 const step0Btn = document.getElementById('step0-next-btn');
                 if (step0Btn) step0Btn.innerText = "Start Application";
 
-                // Setup Dynamic Title & Description matched from Admin
                 if (formConfig.eventTitle) document.getElementById('appTitle').innerHTML = formConfig.eventTitle;
                 
                 if (formConfig.eventDesc) {
@@ -613,23 +648,18 @@
 
     async function loadConfig() {
         try {
-            // Load Builder Config (V8)
             const { data: v8Data } = await _supabase.from('secrets').select('value').eq('name', 'MARKET_FORM_CONFIG_V8').maybeSingle();
             if (v8Data?.value) {
                 let p = JSON.parse(v8Data.value);
                 formConfig.headerUrl = p.headerUrl || formConfig.headerUrl;
-                
-                // Force update to new image if old config was cached in Supabase
                 if (formConfig.headerUrl.includes("imgur.com") || formConfig.headerUrl.includes("export=view")) {
                     formConfig.headerUrl = "https://lh3.googleusercontent.com/d/177iu9igWGiUkD8vdJhZn80PXgLa6hM3c";
                 }
-                
                 formConfig.questions = p.questions || JSON.parse(JSON.stringify(defaultQuestions));
             } else {
                 formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions));
             }
 
-            // Load Admin Access Control Config (V3)
             const { data: v3Data } = await _supabase.from('secrets').select('value').eq('name', 'MARKET_FORM_CONFIG_V3').maybeSingle();
             if (v3Data?.value) {
                 let p3 = JSON.parse(v3Data.value);
@@ -639,7 +669,6 @@
             } else {
                 formConfig.forceStatus = 'auto';
             }
-
             renderPublicForm();
         } catch (e) { 
             formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions)); 
@@ -651,7 +680,6 @@
     function generateFieldHtml(q) {
         let inputHtml = '';
         let common = `id="form_${q.id}" class="control-item"`;
-        
         if (q.type === 'textarea') inputHtml = `<textarea ${common}></textarea>`;
         else if (q.type === 'dropdown') {
             const opts = (q.options || '').split(',').map(o => `<option value="${o.trim()}">${o.trim()}</option>`).join('');
@@ -663,36 +691,24 @@
             let placeholderAttr = q.id === 'student_id' ? 'placeholder="e.g. 1234567"' : '';
             inputHtml = `<input type="${q.type}" ${common} ${placeholderAttr} autocomplete="off" />`;
         }
-        
         let hintHtml = q.hint && q.type !== 'checkbox_single' ? `<span class="form-hint">${q.hint}</span>` : '';
         let lbl = `<label class="form-label" id="lbl-form_${q.id}">${q.label}${q.required?'<span class="required-mark">*</span>':''}${hintHtml}</label>`;
-        
         let htmlString = `<div class="form-group ${q.width === 'half' ? 'half-width' : 'full-width'}">${lbl}${inputHtml}</div>`;
-
         if (q.id === 'food_license') htmlString += `<div id="foodLicenseUploadSection" class="conditional-section full-width"><label class="form-label">Upload AZ food handlers license!<span class="required-mark">*</span></label><input type="hidden" id="formFoodLicenseLinkHidden"><div id="existingLicenseLink"></div><input type="file" id="formFoodLicenseFile" class="control-item" accept="image/*" /></div>`;
         if (q.id === 'needs_power') htmlString += `<div id="powerAgreementSection" class="conditional-section full-width"><label class="form-label" style="color:#FFD60A">ELECTRICITY VENDORS:<span class="required-mark">*</span></label><p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;line-height:1.4;">Due to high demand, electricity is available on a first-come, first-served basis. We do not provide extension cords. Portable power is STRONGLY encouraged.</p><label class="custom-checkbox"><input type="checkbox" id="powerAgreementCheck"><span>I acknowledge that I have read this statement</span></label></div>`;
-        
         return htmlString;
     }
 
     function renderPublicForm() {
         document.getElementById('appHeaderImg').src = formConfig.headerUrl;
-
         const studentIdContainer = document.getElementById('studentIdContainer');
         studentIdContainer.innerHTML = '';
         const dynamicStepsContainer = document.getElementById('dynamicStepsContainer');
         dynamicStepsContainer.innerHTML = '';
-
         let currentStepDiv = null;
         let currentGrid = null;
+        let studentIdQ = formConfig.questions.find(q => q.id === 'student_id') || { id: 'student_id', type: 'number', label: 'Student ID Number', hint: 'Type your ID and tap Next to auto-fill your info!', required: true, width: 'full', isCore: true };
 
-        // Force a student ID question if accidentally removed by admin config
-        let studentIdQ = formConfig.questions.find(q => q.id === 'student_id');
-        if (!studentIdQ) {
-            studentIdQ = { id: 'student_id', type: 'number', label: 'Student ID Number', hint: 'Type your ID and tap Next to auto-fill your info!', required: true, width: 'full', isCore: true };
-        }
-
-        // Render Student ID in Step 0 MANUALLY to EXACTLY match Voting App
         studentIdContainer.innerHTML = `
             <div class="input-group" style="margin-bottom: 24px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 800; margin-bottom: 12px; text-align: center;">Student ID Number</label>
@@ -700,25 +716,18 @@
             </div>
         `;
 
-        // Render Rest of Form dynamically splitting by Section Headers
         formConfig.questions.forEach((q) => {
-            if (q.id === 'student_id') return; // Handled explicitly
-
+            if (q.id === 'student_id') return;
             if (q.type === 'section_header') {
-                if (currentStepDiv) {
-                    dynamicStepsContainer.appendChild(currentStepDiv);
-                }
+                if (currentStepDiv) dynamicStepsContainer.appendChild(currentStepDiv);
                 currentStepDiv = document.createElement('div');
                 currentStepDiv.className = 'form-step';
-                
                 currentStepDiv.innerHTML = `<div class="survey-header-center"><h3 style="margin-top:0; font-size: 1.6rem; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em;">${q.label}</h3></div>`;
-
                 currentGrid = document.createElement('div');
                 currentGrid.className = 'dynamic-form-grid';
                 currentStepDiv.appendChild(currentGrid);
                 return; 
             }
-
             if (!currentStepDiv) {
                 currentStepDiv = document.createElement('div');
                 currentStepDiv.className = 'form-step';
@@ -726,39 +735,27 @@
                 currentGrid.className = 'dynamic-form-grid';
                 currentStepDiv.appendChild(currentGrid);
             }
-
             currentGrid.innerHTML += generateFieldHtml(q);
         });
-
-        if (currentStepDiv) {
-            dynamicStepsContainer.appendChild(currentStepDiv);
-        }
-
-        // Initialize Wizard
+        if (currentStepDiv) dynamicStepsContainer.appendChild(currentStepDiv);
         currentTab = 0;
         showTab(currentTab);
     }
 
-    // --- WIZARD NAVIGATION LOGIC ---
     function showTab(n) {
         let x = document.getElementsByClassName("form-step");
         if(x.length === 0) return;
-        
         for(let i = 0; i < x.length; i++) {
             x[i].style.display = "none";
             x[i].classList.remove('active');
         }
-        
         x[n].style.display = "block";
         setTimeout(() => x[n].classList.add('active'), 10);
-
         const appContainer = document.getElementById('mainAppContainer');
         const heroBanner = document.getElementById('heroBanner');
         const mainCard = document.getElementById('mainSurveyCard');
         const wizardNav = document.getElementById('wizardNavContainer');
         const progressEl = document.getElementById('wizardProgress');
-
-        // Layout switching based on Welcome Screen vs Regular Form
         if (n === 0) {
             appContainer.classList.add('welcome-active');
             heroBanner.style.display = 'none';
@@ -770,22 +767,15 @@
             heroBanner.style.display = 'block';
             wizardNav.style.display = 'flex';
             mainCard.classList.remove('welcome-mode');
-            
             if (x.length > 1) {
                 progressEl.style.display = 'block';
                 document.getElementById('currentStepNum').innerText = (n + 1);
                 document.getElementById('totalStepNum').innerText = x.length;
-                
-                // Build dots
                 let dotsHtml = '';
-                for(let i = 0; i < x.length; i++) {
-                    dotsHtml += `<div class="progress-dot ${i === n ? 'active' : ''}"></div>`;
-                }
+                for(let i = 0; i < x.length; i++) dotsHtml += `<div class="progress-dot ${i === n ? 'active' : ''}"></div>`;
                 document.getElementById('progressDotsContainer').innerHTML = dotsHtml;
             }
         }
-
-        // Standard Button Checks
         if (n === (x.length - 1)) {
             document.getElementById("nextBtn").style.display = "none";
             document.getElementById("submitBtn").style.display = "inline-flex";
@@ -793,49 +783,34 @@
             document.getElementById("nextBtn").style.display = "inline-flex";
             document.getElementById("submitBtn").style.display = "none";
         }
-
-        if (n > 0) {
-            document.getElementById("prevBtn").style.display = "inline-flex";
-        }
+        if (n > 0) document.getElementById("prevBtn").style.display = "inline-flex";
     }
 
     async function nextPrev(n) {
         if (isNavigating) return;
         isNavigating = true;
-
         let x = document.getElementsByClassName("form-step");
-        
-        // Validation moving forward
         if (n === 1 && !validateForm(currentTab)) {
             isNavigating = false;
             return;
         }
-
-        // Step 0 -> Step 1 : Auto-fill Check
         if (currentTab === 0 && n === 1) {
             let step0Btn = document.getElementById('step0-next-btn');
             let origText = step0Btn.innerHTML;
             step0Btn.innerHTML = 'Verifying...';
-            
             await checkExistingVendor();
-            
             step0Btn.innerHTML = origText;
         }
-
         x[currentTab].style.display = "none";
         x[currentTab].classList.remove('active');
         currentTab = currentTab + n;
         showTab(currentTab);
-        
         window.scrollTo({ top: 0, behavior: 'smooth' });
         isNavigating = false;
     }
 
     function validateForm(tabIndex) {
-        let valid = true;
         let x = document.getElementsByClassName("form-step")[tabIndex];
-
-        // Specific Validation: Market Selection (Step 1)
         if (x.id === 'step-1') {
             const selected = document.querySelectorAll('input[name="marketChoice"]:checked');
             if (selected.length === 0) {
@@ -844,155 +819,161 @@
             }
             return true;
         }
-
-        // General Input Validation
         let inputs = x.querySelectorAll('input, select, textarea');
         for (let i = 0; i < inputs.length; i++) {
             let input = inputs[i];
-            
-            // Ignore hidden conditional sections
-            if (input.closest('.conditional-section') && input.closest('.conditional-section').style.display === 'none') {
-                continue;
-            }
-
+            if (input.closest('.conditional-section') && input.closest('.conditional-section').style.display === 'none') continue;
             let idMatch = input.id.match(/^form_(.+)$/);
             if (idMatch) {
                 let fieldId = idMatch[1];
                 let q = formConfig.questions.find(q => q.id === fieldId);
-
                 if (q && q.required) {
                     if (q.type === 'checkbox_single') {
-                        if (!input.checked) {
-                            showToast(`Please agree to: ${q.label}`, true);
-                            return false;
-                        }
-                    } else if (input.value.trim() === "") {
-                        showToast(`Please answer: ${q.label}`, true);
-                        input.focus();
-                        return false;
-                    }
+                        if (!input.checked) { showToast(`Please agree to: ${q.label}`, true); return false; }
+                    } else if (input.value.trim() === "") { showToast(`Please answer: ${q.label}`, true); input.focus(); return false; }
                 }
             }
-
-            // Specific File Upload Validations
             if (input.id === 'formFoodLicenseFile') {
                  const needsLicense = document.getElementById('form_food_license')?.value === 'Yes';
                  const hasExisting = document.getElementById('formFoodLicenseLinkHidden')?.value;
-                 if (needsLicense && !hasExisting && !input.files[0]) {
-                     showToast("Please upload your food handlers license.", true);
-                     return false;
-                 }
+                 if (needsLicense && !hasExisting && !input.files[0]) { showToast("Please upload your food handlers license.", true); return false; }
             }
             if (input.id === 'powerAgreementCheck') {
                  const needsPower = document.getElementById('form_needs_power')?.value === 'Yes';
-                 if (needsPower && !input.checked) {
-                     showToast("Please acknowledge the power statement.", true);
-                     return false;
-                 }
+                 if (needsPower && !input.checked) { showToast("Please acknowledge the power statement.", true); return false; }
             }
         }
-        return valid;
+        return true;
     }
 
-    // --- CHECK APPLICATION STATUS LOGIC ---
+    // --- CHECK STATUS & RESEND ---
     async function checkStatus() {
         const id = document.getElementById('form_student_id').value.trim();
         if (id.length < 3) return;
-
         const btn = document.getElementById('step0-status-btn');
         const origText = btn.innerText;
-        btn.innerText = "Checking...";
+        btn.innerText = "Verifying ID...";
         btn.disabled = true;
 
         try {
-            // 1. Ensure we have all events
             if (allEventsData.length === 0) {
                 const { data } = await _supabase.from('events').select('*');
                 if (data) allEventsData = data;
             }
-
-            // 2. Filter for upcoming events (Event date >= today)
             const now = new Date();
             now.setHours(0,0,0,0);
-            const upcomingEvents = allEventsData.filter(e => {
-                const eDate = new Date(e.market_date + 'T00:00:00');
-                return eDate >= now;
-            });
-
-            // 3. Query vendors table for this ID
-            const { data: apps } = await _supabase.from('vendors').select('*').eq('student_id', id);
+            const upcomingEvents = allEventsData.filter(e => new Date(e.market_date + 'T00:00:00') >= now);
+            const { data: apps } = await _supabase.from('vendors').select('*').eq('student_id', id).order('created_at', { ascending: false });
 
             if (!apps || apps.length === 0) {
-                showToast("No applications found for this ID.", true);
-                btn.innerText = origText;
-                btn.disabled = false;
+                showToast("No records found for this ID.", true);
                 return;
             }
 
-            // 4. Match apps to upcoming events and determine STRICT status
             const matchedApps = apps.map(app => {
                 const event = upcomingEvents.find(ev => ev.id === app.event_id);
-                if (!event) return null; // Ignore past events
-
-                // Strict rule: Always 'In Review' until an email is sent.
+                if (!event) return null;
                 let displayStatus = 'In Review';
                 if (app.email_sent === 'Yes') {
-                    if (app.status === 'Approved' || app.status === 'Checked In') {
-                        displayStatus = 'Approved';
-                    } else if (app.status === 'Denied') {
-                        displayStatus = 'Denied';
-                    }
+                    if (app.status === 'Approved' || app.status === 'Checked In') displayStatus = 'Approved';
+                    else if (app.status === 'Denied') displayStatus = 'Denied';
                 }
-
-                return {
-                    eventName: event.name,
-                    eventDate: event.market_date,
-                    status: displayStatus
-                };
+                return { ...app, eventName: event.name, eventDate: event.market_date, eventLoc: event.location, eventTime: event.market_time, displayStatus };
             }).filter(Boolean);
 
             if (matchedApps.length === 0) {
                 showToast("No upcoming applications found.", true);
-                btn.innerText = origText;
-                btn.disabled = false;
                 return;
             }
 
-            // 5. Render Modal HTML
             let html = '';
             matchedApps.forEach(a => {
                 const d = new Date(a.eventDate + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-                
-                let statusColor = '#FF9500'; // Orange/Yellow for In Review
-                let statusIcon = '⏳';
-                if (a.status === 'Approved') { statusColor = '#34C759'; statusIcon = '✅'; }
-                if (a.status === 'Denied') { statusColor = '#FF3B30'; statusIcon = '❌'; }
+                let color = '#FF9500'; let icon = '⏳';
+                if (a.displayStatus === 'Approved') { color = '#34C759'; icon = '✅'; }
+                if (a.displayStatus === 'Denied') { color = '#FF3B30'; icon = '❌'; }
+
+                const canResend = a.email_sent === 'Yes';
 
                 html += `
-                    <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; margin-bottom: 12px; text-align: left;">
-                        <div style="font-weight: 800; font-size: 1.1rem; color: #fff; margin-bottom: 4px;">${a.eventName}</div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">🗓️ ${d}</div>
-                        <div style="display: inline-flex; align-items: center; gap: 6px; background: ${statusColor}22; border: 1px solid ${statusColor}55; color: ${statusColor}; padding: 6px 12px; border-radius: 100px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
-                            ${statusIcon} ${a.status}
+                    <div class="status-market-card">
+                        <div class="status-header">
+                            <div class="status-name">${a.eventName}</div>
+                            <div class="status-badge" style="background: ${color}22; border: 1px solid ${color}55; color: ${color};">
+                                ${icon} ${a.displayStatus}
+                            </div>
                         </div>
+                        <div class="status-meta">
+                            <span style="opacity: 0.5;">🗓️ Date</span> <span>${d}</span>
+                            <span style="opacity: 0.5;">⏰ Time</span> <span>${a.eventTime || 'TBA'}</span>
+                            <span style="opacity: 0.5;">📍 Place</span> <span>${a.eventLoc || 'TBA'}</span>
+                        </div>
+                        ${canResend ? `
+                            <button id="resend-${a.id}" class="resend-btn" onclick="resendStatusEmail('${a.id}', '${a.event_id}')">
+                                📩 Resend Status Email
+                            </button>
+                        ` : `
+                            <div style="font-size: 0.75rem; color: #FF9500; font-weight: 700; text-align: center; padding: 10px; background: rgba(255,149,0,0.05); border-radius: 12px;">
+                                Application is still being processed.
+                            </div>
+                        `}
                     </div>
                 `;
             });
-
             document.getElementById('statusModalContent').innerHTML = html;
             document.getElementById('statusModal').classList.add('show');
-
-        } catch (e) {
-            console.error(e);
-            showToast("Error checking status.", true);
-        } finally {
-            btn.innerText = origText;
-            btn.disabled = false;
-        }
+        } catch (e) { console.error(e); showToast("System error", true); }
+        finally { btn.innerText = origText; btn.disabled = false; }
     }
 
+    async function resendStatusEmail(appId, eventId) {
+        const btn = document.getElementById(`resend-${appId}`);
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = 'Sending...';
+        btn.disabled = true;
 
-    // --- ADMIN ---
+        try {
+            const { data: secrets } = await _supabase.from('secrets').select('*');
+            const apiKey = secrets.find(s => s.name === 'BREVO_API_KEY')?.value;
+            if(!apiKey) throw new Error("API Key missing");
+
+            const { data: vendor } = await _supabase.from('vendors').select('*').eq('id', appId).single();
+            const { data: event } = await _supabase.from('events').select('*').eq('id', eventId).single();
+
+            let subj = '', body = '';
+            const isApproved = vendor.status === 'Approved' || vendor.status === 'Checked In';
+            
+            if (isApproved) {
+                subj = event.template_approved_subject; body = event.template_approved_body;
+                if (vendor.needs_power === 'Yes') {
+                    subj = event.template_power_subject || subj; body = event.template_power_body || body;
+                }
+            } else {
+                subj = event.template_denied_subject; body = event.template_denied_body;
+            }
+
+            const parsedBody = body.replace(/\{\{FIRST\}\}/g, vendor.first_name).replace(/\{\{EVENT\}\}/g, event.name);
+            const parsedSubj = subj.replace(/\{\{FIRST\}\}/g, vendor.first_name).replace(/\{\{EVENT\}\}/g, event.name);
+
+            const html = `<html><body style="font-family:sans-serif; line-height:1.6; padding:20px; color:#333;">${parsedBody.replace(/\n/g, '<br>')}</body></html>`;
+
+            const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+                method: 'POST',
+                headers: { 'accept': 'application/json', 'api-key': apiKey, 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    sender: { name: 'Canyon Activities Board', email: 'studentmarkets@cabgcu.com' },
+                    to: [{ email: vendor.preferred_email, name: vendor.first_name }],
+                    subject: parsedSubj, htmlContent: html
+                })
+            });
+
+            if(!response.ok) throw new Error("Email service failed");
+            showToast("✨ Email resent successfully!");
+        } catch(e) { console.error(e); showToast("Resend failed", true); }
+        finally { btn.innerHTML = origHtml; btn.disabled = false; }
+    }
+
+    // --- ADMIN & MISC ---
     function showAdminGate() { document.getElementById('gateModal').classList.add('show'); }
     function hideAdminGate() { document.getElementById('gateModal').classList.remove('show'); }
     function verifyAdmin() { if (document.getElementById('adminPass').value === 'Vendor49!') { hideAdminGate(); renderAdminPanel(); switchView('admin'); } else { showToast('Invalid', true); } }
@@ -1008,54 +989,34 @@
                     </div>
                     <button class="builder-q-remove" onclick="deleteQ(${i})">&times;</button>
                 </div>
-
-                <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Question Type</label>
+                <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Type</label>
                 <select class="control-item" style="margin-bottom:12px;" onchange="updateQ(${i}, 'type', this.value)">
                     <option value="text" ${q.type==='text'?'selected':''}>Short Text</option>
-                    <option value="textarea" ${q.type==='textarea'?'selected':''}>Long Text (Paragraph)</option>
+                    <option value="textarea" ${q.type==='textarea'?'selected':''}>Paragraph</option>
                     <option value="email" ${q.type==='email'?'selected':''}>Email</option>
                     <option value="tel" ${q.type==='tel'?'selected':''}>Phone</option>
                     <option value="number" ${q.type==='number'?'selected':''}>Number</option>
                     <option value="dropdown" ${q.type==='dropdown'?'selected':''}>Dropdown</option>
-                    <option value="checkbox_single" ${q.type==='checkbox_single'?'selected':''}>Agreement Checkbox</option>
-                    <option value="section_header" ${q.type==='section_header'?'selected':''}>Section Header (Page Break)</option>
+                    <option value="checkbox_single" ${q.type==='checkbox_single'?'selected':''}>Agreement</option>
+                    <option value="section_header" ${q.type==='section_header'?'selected':''}>Header</option>
                 </select>
-
-                <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Label / Title / Question</label>
+                <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Label</label>
                 <input type="text" class="control-item" style="margin-bottom:12px;" value="${q.label}" onchange="updateQ(${i},'label',this.value)">
-                
                 ${q.type !== 'section_header' ? `
-                    <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Hint / Helper Text (Optional)</label>
-                    <input type="text" class="control-item" style="margin-bottom:12px;" placeholder="Optional hint..." value="${q.hint || ''}" onchange="updateQ(${i},'hint',this.value)">
-                ` : ''}
-                
-                ${q.type === 'dropdown' ? `
-                    <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Dropdown Options (Comma separated)</label>
-                    <input type="text" class="control-item" style="margin-bottom:12px;" placeholder="Option 1, Option 2" value="${q.options || ''}" onchange="updateQ(${i},'options',this.value)">
-                ` : ''}
-                
-                ${q.type !== 'section_header' ? `
-                    <div style="display:flex;gap:15px;margin-top:8px;">
-                        <label class="custom-checkbox" style="padding:8px; margin:0;"><input type="checkbox" ${q.required?'checked':''} onchange="updateQ(${i},'required',this.checked)"><span>Required</span></label>
-                        <label class="custom-checkbox" style="padding:8px; margin:0;"><input type="checkbox" ${q.width==='half'?'checked':''} onchange="updateQ(${i},'width',this.checked?'half':'full')"><span>Half-Width</span></label>
-                    </div>
+                    <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Hint</label>
+                    <input type="text" class="control-item" style="margin-bottom:12px;" value="${q.hint || ''}" onchange="updateQ(${i},'hint',this.value)">
                 ` : ''}
             </div>`).join('');
     }
     function addCustomQuestion(t) { formConfig.questions.push({ id: 'q_'+Date.now(), type: t==='section_header'?'section_header':'text', label: 'New Item', width: 'full', required: false, isCore: false }); renderAdminQuestionsList(); }
     function deleteQ(i) { formConfig.questions.splice(i, 1); renderAdminQuestionsList(); }
     function moveQ(i, d) { let n=i+d; if(n<0||n>=formConfig.questions.length)return; [formConfig.questions[i],formConfig.questions[n]]=[formConfig.questions[n],formConfig.questions[i]]; renderAdminQuestionsList(); }
-    function updateQ(i,k,v) { 
-        formConfig.questions[i][k]=v; 
-        if (k === 'type') renderAdminQuestionsList();
-    }
+    function updateQ(i,k,v) { formConfig.questions[i][k]=v; if (k === 'type') renderAdminQuestionsList(); }
     async function saveAdminConfig() { try { await _supabase.from('secrets').upsert([{ name: 'MARKET_FORM_CONFIG_V8', value: JSON.stringify(formConfig) }], { onConflict: 'name' }); showToast("Saved"); renderPublicForm(); switchView('application'); } catch(e){ showToast("Error",true); } }
 
-    // --- AUTO-FILL & SUBMISSION ---
     async function checkExistingVendor() {
         const id = document.getElementById('form_student_id').value.trim();
         if(id.length < 4) return false;
-        
         try {
             const { data } = await _supabase.from('vendors').select('*').eq('student_id', id).order('created_at', { ascending: false }).limit(1);
             if(data && data[0]) {
@@ -1067,110 +1028,53 @@
                         else if (v[q.id]) el.value = v[q.id];
                     }
                 });
-
                 if (v.food_license_link) {
                     document.getElementById('formFoodLicenseLinkHidden').value = v.food_license_link;
-                    document.getElementById('existingLicenseLink').innerHTML = `
-                        <div style="color:#34C759; font-size:0.85rem; margin:10px 0; font-weight:800; background:rgba(52,199,89,0.1); padding:10px; border-radius:10px; border:1px solid rgba(52,199,89,0.2);">
-                            ✅ Existing food handlers license found on file. <br>
-                            <span style="font-size:0.7rem; font-weight:500; color:var(--text-muted);">You do not need to re-upload unless your license has expired.</span>
-                        </div>`;
+                    document.getElementById('existingLicenseLink').innerHTML = `<div style="color:#34C759; font-size:0.85rem; margin:10px 0; font-weight:800; background:rgba(52,199,89,0.1); padding:10px; border-radius:10px; border:1px solid rgba(52,199,89,0.2);">✅ Existing license found on file.</div>`;
                 }
-
                 toggleFoodLicense(); togglePowerAgreement();
-                showToast("✨ Profile auto-filled from previous app!", false);
+                showToast("✨ Profile auto-filled!", false);
                 return true;
             }
-        } catch(e) { console.error("Autofill Error:", e); }
+        } catch(e) {}
         return false;
     }
 
     async function submitApplication() {
-        // Validate final tab explicitly just in case
         if(!validateForm(currentTab)) return;
-
-        const selectedMarketIds = Array.from(document.querySelectorAll('input[name="marketChoice"]:checked')).map(cb => cb.value);
+        const selectedIds = Array.from(document.querySelectorAll('input[name="marketChoice"]:checked')).map(cb => cb.value);
         const btn = document.getElementById('submitBtn');
-        
-        // Base Payload
         const basePayload = { status: 'Pending', email_sent: 'No', first_name: '', last_name: '' };
-        
         for(let q of formConfig.questions) {
             if(q.type==='section_header') continue;
             const el = document.getElementById('form_'+q.id);
             if(!el) continue;
             const val = q.type==='checkbox_single' ? (el.checked?'Yes':'No') : el.value.trim();
-            
             if(q.id === 'full_name_combined') {
                 const parts = val.split(' ');
                 basePayload.first_name = parts[0] || val;
                 basePayload.last_name = parts.slice(1).join(' ') || '.'; 
             }
-
             if(q.isCore) basePayload[q.id] = val; 
         }
-
-        const agreementLabels = formConfig.questions.filter(q => q.id.startsWith('agree_')).map(q => `${q.label}: Yes`);
-        basePayload.agreements_checked = agreementLabels.join('\n');
-
-        // Upload Logic
         if (basePayload.food_license==='Yes') {
              const file = document.getElementById('formFoodLicenseFile').files[0];
              const existing = document.getElementById('formFoodLicenseLinkHidden').value;
-             
              if(file) {
-                 const comp = await compressImage(file);
                  const path = `license_${Date.now()}.jpg`;
-                 await _supabase.storage.from('licenses').upload(path, comp);
+                 await _supabase.storage.from('licenses').upload(path, await compressImage(file));
                  basePayload.food_license_link = _supabase.storage.from('licenses').getPublicUrl(path).data.publicUrl;
-             } else {
-                 basePayload.food_license_link = existing;
-             }
+             } else basePayload.food_license_link = existing;
         }
-        
-        const actualComments = document.getElementById('form_additional_comments')?.value.trim() || '';
-        basePayload.additional_comments = actualComments;
-        
+        basePayload.additional_comments = document.getElementById('form_additional_comments')?.value.trim() || '';
         btn.disabled = true;
         try {
-            const inserts = selectedMarketIds.map(id => ({ ...basePayload, event_id: id }));
+            const inserts = selectedIds.map(id => ({ ...basePayload, event_id: id }));
             const { error } = await _supabase.from('vendors').insert(inserts);
             if(error) throw error;
-
-            // Summary View
-            const selectedMarketNames = selectedMarketIds.map(id => allEventsData.find(ev => ev.id === id)?.name || 'Unknown Market');
-            document.getElementById('successGreeting').innerText = `Thank you, ${basePayload.first_name}!`;
-            
-            let summaryHtml = `
-                <span class="summary-label">Applied For</span>
-                <span class="summary-value">${selectedMarketNames.join(', ')}</span>
-
-                <span class="summary-label">Student ID</span>
-                <span class="summary-value">${basePayload.student_id}</span>
-
-                <span class="summary-label">Email</span>
-                <span class="summary-value">${basePayload.preferred_email}</span>
-
-                <span class="summary-label">Project Description</span>
-                <span class="summary-value">${basePayload.description}</span>
-
-                <span class="summary-label">Needs Power?</span>
-                <span class="summary-value">${basePayload.needs_power}</span>
-
-                <span class="summary-label">Stay Entire Event?</span>
-                <span class="summary-value">${basePayload.availability}</span>
-
-                <span class="summary-label">Social Media / Link</span>
-                <span class="summary-value">${basePayload.link}</span>
-            `;
-            document.getElementById('summaryContent').innerHTML = summaryHtml;
-
             switchView('success');
-            // Dashboard style Confetti!
-            if (typeof confetti === 'function') {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#0A84FF', '#BF5AF2', '#ffffff'] });
-            }
-        } catch(e) { console.error(e); showToast("Submission failed", true); }
+            if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#0A84FF', '#BF5AF2', '#ffffff'] });
+        } catch(e) { showToast("Submission failed", true); }
         finally { btn.disabled = false; }
     }
 
