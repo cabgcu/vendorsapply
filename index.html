@@ -964,7 +964,9 @@
                 const event = upcomingEvents.find(ev => ev.id === app.event_id);
                 if (!event) return null;
                 let displayStatus = 'In Review';
-                if (app.email_sent === 'Yes') {
+                
+                // Fixed: Check for ANY sent email type instead of just 'Yes'
+                if (app.email_sent && app.email_sent !== 'No') {
                     if (app.status === 'Approved' || app.status === 'Checked In') displayStatus = 'Approved';
                     else if (app.status === 'Denied') displayStatus = 'Denied';
                 }
@@ -983,7 +985,8 @@
                 if (a.displayStatus === 'Approved') { color = '#34C759'; icon = '✅'; }
                 if (a.displayStatus === 'Denied') { color = '#FF3B30'; icon = '❌'; }
 
-                const canResend = a.email_sent === 'Yes';
+                // Fixed: Ensure the resend button appears for all sent types
+                const canResend = (a.email_sent && a.email_sent !== 'No');
 
                 html += `
                     <div class="status-market-card">
