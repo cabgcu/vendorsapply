@@ -379,10 +379,11 @@
                         <span style="font-size: 0.75rem; color: #FF3B30; font-weight: 700; text-transform: uppercase;">* Indicates required question</span>
                     </div>
 
-                    <div class="form-group full-width" style="margin-bottom:15px;">
-                        <label class="form-label">Which Market are you applying for?<span class="required-mark">*</span></label>
+                    <!-- Clean Fieldset setup guarantees screen reader accessibility and announces selection properly -->
+                    <fieldset class="form-group full-width" style="margin-bottom:15px; border:none; padding:0; margin:0;">
+                        <legend class="form-label" id="lbl-market-selection" style="width:100%;">Which Market are you applying for?<span class="required-mark">*</span></legend>
                         <div id="marketSelectionContainer"></div>
-                    </div>
+                    </fieldset>
                 </div>
 
                 <!-- DYNAMIC STEPS (Generated from Config) -->
@@ -429,8 +430,10 @@
     <div id="adminView" class="view">
         <div class="frosted survey-card" style="max-width: 900px;">
             <h2 style="margin-top:0; font-size: 1.8rem; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Form Builder Admin</h2>
-            <div class="section-header">Global Branding</div>
+            <div class="section-header">Global Branding & Text</div>
             <div class="form-group"><label class="form-label">Header Image URL</label><input type="text" id="adminHeaderUrl" class="control-item"></div>
+            <div class="form-group"><label class="form-label">Global Form Title</label><input type="text" id="adminEventTitle" class="control-item" placeholder="Leave blank for default"></div>
+            <div class="form-group"><label class="form-label">Global Form Description</label><textarea id="adminEventDesc" class="control-item" placeholder="Leave blank for default instructions."></textarea></div>
             
             <div class="section-header" style="margin-top:30px;">
                 Form Pages & Questions
@@ -574,6 +577,7 @@
         try {
             const { data, error } = await _supabase.from('events').select('*').order('created_at', { ascending: false });
             const container = document.getElementById('marketSelectionContainer');
+            const lblMarketSelection = document.getElementById('lbl-market-selection');
             
             if (error || !data || data.length === 0) {
                 isAppClosed = true;
@@ -606,22 +610,45 @@
                 const step0Btn = document.getElementById('step0-next-btn');
                 if (step0Btn) step0Btn.innerText = "Start Application";
 
-                if (formConfig.eventTitle) document.getElementById('appTitle').innerHTML = formConfig.eventTitle;
-                
-                if (formConfig.eventDesc) {
-                    document.getElementById('appDesc').innerHTML = formConfig.eventDesc + "<br><br><strong>Select one or more markets below to apply:</strong>";
+                // SMART HEADER & ACCESSIBILITY LOGIC (Issue 1 Resolved)
+                if (openMarkets.length > 1) {
+                    if (formConfig.eventTitle) document.getElementById('appTitle').innerHTML = formConfig.eventTitle;
+                    
+                    let descHtml = "";
+                    if (formConfig.eventDesc) {
+                        descHtml += formConfig.eventDesc + "<br><br>";
+                    }
+                    descHtml += "<strong>Select one or more markets below to apply:</strong>";
+                    
+                    document.getElementById('appDesc').innerHTML = descHtml;
+                    document.getElementById('appDesc').style.display = 'block';
+                    
+                    // Legend is read automatically by screen readers when focusing checkboxes
+                    lblMarketSelection.innerHTML = 'Which Markets are you applying for? <span style="text-transform:none; font-weight:normal; font-size:0.85rem; color:var(--text-muted); display:block; margin-top:4px;">Select a market to apply (can apply to multiple)</span><span class="required-mark">*</span>';
                 } else {
-                    document.getElementById('appDesc').innerHTML = "Select one or more markets below to apply. <strong>(You may select multiple)</strong>";
+                    const singleMarket = openMarkets[0];
+                    document.getElementById('appTitle').innerHTML = singleMarket.name || formConfig.eventTitle || "Vendor Application";
+                    
+                    let descHtml = singleMarket.description || formConfig.eventDesc || "";
+                    if (descHtml) {
+                        document.getElementById('appDesc').innerHTML = descHtml;
+                        document.getElementById('appDesc').style.display = 'block';
+                    } else {
+                        document.getElementById('appDesc').style.display = 'none';
+                    }
+                    
+                    lblMarketSelection.innerHTML = 'Which Market are you applying for? <span style="text-transform:none; font-weight:normal; font-size:0.85rem; color:var(--text-muted); display:block; margin-top:4px;">Select the market below to apply</span><span class="required-mark">*</span>';
                 }
                 
+                // MAPPING HTML - Bound uniquely per label correctly so details aren't mashed together
                 container.innerHTML = openMarkets.map(e => {
                     const d = new Date(e.market_date + 'T12:00:00');
                     const formattedDate = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
                     const formattedClose = new Date(e.app_close).toLocaleString();
                     
                     return `
-                    <label class="market-option" id="label_market_${e.id}">
-                        <input type="checkbox" name="marketChoice" value="${e.id}" onchange="updateMarketSelectionUI()">
+                    <label class="market-option" id="label_market_${e.id}" for="chk_market_${e.id}">
+                        <input type="checkbox" id="chk_market_${e.id}" name="marketChoice" value="${e.id}" onchange="updateMarketSelectionUI()">
                         <div class="market-info-text">
                             <span class="market-name">${e.name}</span>
                             <span class="market-meta">
@@ -659,6 +686,7 @@
     }
 
     async function loadConfig() {
+        let v8HasText = false;
         try {
             const { data: v8Data } = await _supabase.from('secrets').select('value').eq('name', 'MARKET_FORM_CONFIG_V8').maybeSingle();
             if (v8Data?.value) {
@@ -668,6 +696,8 @@
                     formConfig.headerUrl = "https://lh3.googleusercontent.com/d/177iu9igWGiUkD8vdJhZn80PXgLa6hM3c";
                 }
                 formConfig.questions = p.questions || JSON.parse(JSON.stringify(defaultQuestions));
+                if (p.hasOwnProperty('eventTitle')) { formConfig.eventTitle = p.eventTitle; v8HasText = true; }
+                if (p.hasOwnProperty('eventDesc')) { formConfig.eventDesc = p.eventDesc; v8HasText = true; }
             } else {
                 formConfig.questions = JSON.parse(JSON.stringify(defaultQuestions));
             }
@@ -676,8 +706,10 @@
             if (v3Data?.value) {
                 let p3 = JSON.parse(v3Data.value);
                 formConfig.forceStatus = p3.forceStatus || 'auto';
-                formConfig.eventTitle = p3.title || null;
-                formConfig.eventDesc = p3.description || null;
+                if (!v8HasText) {
+                    formConfig.eventTitle = p3.title || null;
+                    formConfig.eventDesc = p3.description || null;
+                }
             } else {
                 formConfig.forceStatus = 'auto';
             }
@@ -856,6 +888,43 @@
             }
         }
         return true;
+    }
+
+    // --- SUMMARY GENERATOR (Issue 2 Resolved) ---
+    function generateSummary(selectedIds, payload) {
+        const container = document.getElementById('summaryContent');
+        if (!container) return;
+
+        // Extract market names
+        const marketNames = selectedIds.map(id => {
+            const mkt = allEventsData.find(e => String(e.id) === String(id));
+            return mkt ? mkt.name : 'Selected Market';
+        });
+
+        const marketLabelsHtml = marketNames.map(m => `
+            <div style="background: rgba(10, 132, 255, 0.15); border: 1px solid rgba(10, 132, 255, 0.3); color: #fff; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 1rem; display: inline-block; margin: 6px; box-shadow: 0 4px 15px rgba(10,132,255,0.1);">
+                ${m}
+            </div>
+        `).join('');
+
+        container.innerHTML = `
+            <div style="margin-bottom: 30px;">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 16px;">Markets Applied For</span>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+                    ${marketLabelsHtml}
+                </div>
+            </div>
+            <div style="margin-bottom: 24px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="display:block; margin-bottom:6px; color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Applicant</span>
+                <span style="display:block; font-size: 1.3rem; font-weight: 800; color: #fff;">${payload.first_name} ${payload.last_name}</span>
+            </div>
+            <div style="background: rgba(52, 199, 89, 0.1); padding: 20px; border-radius: 20px; border: 1px solid rgba(52, 199, 89, 0.2);">
+                <span style="display:block; margin-bottom:6px; color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Application Status</span>
+                <span style="color: #34C759; margin-bottom:0; font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span style="width: 10px; height: 10px; background: #34C759; border-radius: 50%; box-shadow: 0 0 10px #34C759;"></span> Received & In Review
+                </span>
+            </div>
+        `;
     }
 
     // --- CHECK STATUS & RESEND ---
@@ -1039,7 +1108,12 @@
     function showAdminGate() { document.getElementById('gateModal').classList.add('show'); }
     function hideAdminGate() { document.getElementById('gateModal').classList.remove('show'); }
     function verifyAdmin() { if (document.getElementById('adminPass').value === 'Vendor49!') { hideAdminGate(); renderAdminPanel(); switchView('admin'); } else { showToast('Invalid', true); } }
-    function renderAdminPanel() { document.getElementById('adminHeaderUrl').value = formConfig.headerUrl; renderAdminQuestionsList(); }
+    function renderAdminPanel() { 
+        document.getElementById('adminHeaderUrl').value = formConfig.headerUrl || ''; 
+        document.getElementById('adminEventTitle').value = formConfig.eventTitle || '';
+        document.getElementById('adminEventDesc').value = formConfig.eventDesc || '';
+        renderAdminQuestionsList(); 
+    }
     function renderAdminQuestionsList() {
         const list = document.getElementById('adminQuestionsList');
         list.innerHTML = formConfig.questions.map((q, i) => `
@@ -1074,7 +1148,18 @@
     function deleteQ(i) { formConfig.questions.splice(i, 1); renderAdminQuestionsList(); }
     function moveQ(i, d) { let n=i+d; if(n<0||n>=formConfig.questions.length)return; [formConfig.questions[i],formConfig.questions[n]]=[formConfig.questions[n],formConfig.questions[i]]; renderAdminQuestionsList(); }
     function updateQ(i,k,v) { formConfig.questions[i][k]=v; if (k === 'type') renderAdminQuestionsList(); }
-    async function saveAdminConfig() { try { await _supabase.from('secrets').upsert([{ name: 'MARKET_FORM_CONFIG_V8', value: JSON.stringify(formConfig) }], { onConflict: 'name' }); showToast("Saved"); renderPublicForm(); switchView('application'); } catch(e){ showToast("Error",true); } }
+    async function saveAdminConfig() { 
+        formConfig.headerUrl = document.getElementById('adminHeaderUrl').value;
+        formConfig.eventTitle = document.getElementById('adminEventTitle').value;
+        formConfig.eventDesc = document.getElementById('adminEventDesc').value;
+        try { 
+            await _supabase.from('secrets').upsert([{ name: 'MARKET_FORM_CONFIG_V8', value: JSON.stringify(formConfig) }], { onConflict: 'name' }); 
+            showToast("Saved"); 
+            setTimeout(() => window.location.reload(), 1000); // Reloads to instantly clear out the old text 
+        } catch(e){ 
+            showToast("Error",true); 
+        } 
+    }
 
     async function checkExistingVendor() {
         const id = document.getElementById('form_student_id').value.trim();
@@ -1134,6 +1219,10 @@
             const inserts = selectedIds.map(id => ({ ...basePayload, event_id: id }));
             const { error } = await _supabase.from('vendors').insert(inserts);
             if(error) throw error;
+            
+            // Generate visual summary mapping to all selected markets
+            generateSummary(selectedIds, basePayload);
+
             switchView('success');
             if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#0A84FF', '#BF5AF2', '#ffffff'] });
         } catch(e) { showToast("Submission failed", true); }
