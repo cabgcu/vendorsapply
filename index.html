@@ -315,6 +315,9 @@
                             <!-- Injected by JS to match UI exactly -->
                         </div>
                         <button id="step0-next-btn" class="big-action-btn" onclick="nextPrev(1)" disabled>Start Application</button>
+                        
+                        <!-- Check Status Button -->
+                        <button id="step0-status-btn" class="btn btn-ghost" style="width: 100%; margin-top: 15px; font-size: 0.9rem;" onclick="checkStatus()" disabled>Check Application Status</button>
                     </div>
                 </div>
 
@@ -404,12 +407,26 @@
     </footer>
 </div>
 
+<!-- Admin Gate Modal -->
 <div id="gateModal" class="modal">
     <div class="modal-bg" onclick="hideAdminGate()"></div>
     <div class="modal-content">
         <h3 style="margin-top:0; margin-bottom: 20px; font-size: 1.5rem; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Authorization</h3>
         <input type="password" id="adminPass" class="control-item" placeholder="Enter Password" style="margin-bottom:24px; text-align: center;" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
         <button class="btn btn-primary" onclick="verifyAdmin()" style="width: 100%;">Authorize</button>
+    </div>
+</div>
+
+<!-- Application Status Modal -->
+<div id="statusModal" class="modal">
+    <div class="modal-bg" onclick="document.getElementById('statusModal').classList.remove('show')"></div>
+    <div class="modal-content" style="max-width: 500px; text-align: left;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h3 style="margin:0; font-size: 1.5rem; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Application Status</h3>
+            <button onclick="document.getElementById('statusModal').classList.remove('show')" style="background:none; border:none; color:#fff; font-size:1.8rem; cursor:pointer; line-height: 1;">&times;</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0; margin-bottom: 20px;">Showing applications for upcoming markets.</p>
+        <div id="statusModalContent" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
     </div>
 </div>
 
@@ -466,11 +483,21 @@
         document.getElementById('studentIdContainer').addEventListener('input', () => {
             const idInput = document.getElementById('form_student_id');
             const step0Btn = document.getElementById('step0-next-btn');
+            const statusBtn = document.getElementById('step0-status-btn');
+            
             if (idInput && step0Btn) {
+                const isValid = idInput.value.trim().length >= 3;
+                
+                // Keep Next button logic tied to application being open
                 if (isAppClosed) {
                     step0Btn.disabled = true;
                 } else {
-                    step0Btn.disabled = idInput.value.trim().length < 3;
+                    step0Btn.disabled = !isValid;
+                }
+                
+                // Allow "Check Status" to work ALWAYS (even if applications are closed)
+                if (statusBtn) {
+                    statusBtn.disabled = !isValid;
                 }
             }
         });
@@ -866,6 +893,104 @@
         }
         return valid;
     }
+
+    // --- CHECK APPLICATION STATUS LOGIC ---
+    async function checkStatus() {
+        const id = document.getElementById('form_student_id').value.trim();
+        if (id.length < 3) return;
+
+        const btn = document.getElementById('step0-status-btn');
+        const origText = btn.innerText;
+        btn.innerText = "Checking...";
+        btn.disabled = true;
+
+        try {
+            // 1. Ensure we have all events
+            if (allEventsData.length === 0) {
+                const { data } = await _supabase.from('events').select('*');
+                if (data) allEventsData = data;
+            }
+
+            // 2. Filter for upcoming events (Event date >= today)
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            const upcomingEvents = allEventsData.filter(e => {
+                const eDate = new Date(e.market_date + 'T00:00:00');
+                return eDate >= now;
+            });
+
+            // 3. Query vendors table for this ID
+            const { data: apps } = await _supabase.from('vendors').select('*').eq('student_id', id);
+
+            if (!apps || apps.length === 0) {
+                showToast("No applications found for this ID.", true);
+                btn.innerText = origText;
+                btn.disabled = false;
+                return;
+            }
+
+            // 4. Match apps to upcoming events and determine STRICT status
+            const matchedApps = apps.map(app => {
+                const event = upcomingEvents.find(ev => ev.id === app.event_id);
+                if (!event) return null; // Ignore past events
+
+                // Strict rule: Always 'In Review' until an email is sent.
+                let displayStatus = 'In Review';
+                if (app.email_sent === 'Yes') {
+                    if (app.status === 'Approved' || app.status === 'Checked In') {
+                        displayStatus = 'Approved';
+                    } else if (app.status === 'Denied') {
+                        displayStatus = 'Denied';
+                    }
+                }
+
+                return {
+                    eventName: event.name,
+                    eventDate: event.market_date,
+                    status: displayStatus
+                };
+            }).filter(Boolean);
+
+            if (matchedApps.length === 0) {
+                showToast("No upcoming applications found.", true);
+                btn.innerText = origText;
+                btn.disabled = false;
+                return;
+            }
+
+            // 5. Render Modal HTML
+            let html = '';
+            matchedApps.forEach(a => {
+                const d = new Date(a.eventDate + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+                
+                let statusColor = '#FF9500'; // Orange/Yellow for In Review
+                let statusIcon = '⏳';
+                if (a.status === 'Approved') { statusColor = '#34C759'; statusIcon = '✅'; }
+                if (a.status === 'Denied') { statusColor = '#FF3B30'; statusIcon = '❌'; }
+
+                html += `
+                    <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; margin-bottom: 12px; text-align: left;">
+                        <div style="font-weight: 800; font-size: 1.1rem; color: #fff; margin-bottom: 4px;">${a.eventName}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">🗓️ ${d}</div>
+                        <div style="display: inline-flex; align-items: center; gap: 6px; background: ${statusColor}22; border: 1px solid ${statusColor}55; color: ${statusColor}; padding: 6px 12px; border-radius: 100px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                            ${statusIcon} ${a.status}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('statusModalContent').innerHTML = html;
+            document.getElementById('statusModal').classList.add('show');
+
+        } catch (e) {
+            console.error(e);
+            showToast("Error checking status.", true);
+        } finally {
+            btn.innerText = origText;
+            btn.disabled = false;
+        }
+    }
+
 
     // --- ADMIN ---
     function showAdminGate() { document.getElementById('gateModal').classList.add('show'); }
